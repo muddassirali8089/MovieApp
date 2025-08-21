@@ -241,11 +241,8 @@ export default function MovieDetailPage() {
                 <div className="text-dark-300 text-sm">Genre</div>
               </div>
             </div>
-          </motion.div>
-        </div>
 
-        {/* Rating Section */}
-        <motion.div
+            <motion.div
           className="mt-12"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -256,6 +253,11 @@ export default function MovieDetailPage() {
             onRatingChange={handleRatingChange}
           />
         </motion.div>
+          </motion.div>
+        </div>
+
+        {/* Rating Section */}
+        
       </div>
     </div>
   )
