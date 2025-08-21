@@ -1,0 +1,142 @@
+[
+  {
+    "category": "Action",
+    "movies": [
+      {
+        "title": "Mad Max: Fury Road",
+        "description": "Post-apocalyptic action ride.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000001/madmax.jpg",
+        "releaseDate": "2015-05-15"
+      },
+      {
+        "title": "John Wick",
+        "description": "A retired hitman seeks vengeance.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000002/johnwick.jpg",
+        "releaseDate": "2014-10-24"
+      },
+      {
+        "title": "Gladiator",
+        "description": "A Roman general fights for honor.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000003/gladiator.jpg",
+        "releaseDate": "2000-05-05"
+      },
+      {
+        "title": "The Dark Knight",
+        "description": "Batman faces the Joker.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000004/darkknight.jpg",
+        "releaseDate": "2008-07-18"
+      },
+      {
+        "title": "Inception",
+        "description": "Dreams within dreams.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000005/inception.jpg",
+        "releaseDate": "2010-07-16"
+      }
+    ]
+  },
+  {
+    "category": "Horror",
+    "movies": [
+      {
+        "title": "The Conjuring",
+        "description": "Paranormal investigators fight evil.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000011/conjuring.jpg",
+        "releaseDate": "2013-07-19"
+      },
+      {
+        "title": "Get Out",
+        "description": "A chilling psychological thriller.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000012/getout.jpg",
+        "releaseDate": "2017-02-24"
+      },
+      {
+        "title": "A Quiet Place",
+        "description": "Silence is survival.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000013/quietplace.jpg",
+        "releaseDate": "2018-04-06"
+      },
+      {
+        "title": "It",
+        "description": "A clown terrorizes children.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000014/it.jpg",
+        "releaseDate": "2017-09-08"
+      },
+      {
+        "title": "Hereditary",
+        "description": "A family's dark secrets unfold.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000015/hereditary.jpg",
+        "releaseDate": "2018-06-08"
+      }
+    ]
+  },
+  {
+    "category": "Comedy",
+    "movies": [
+      {
+        "title": "The Hangover",
+        "description": "A wild bachelor party goes wrong.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000021/hangover.jpg",
+        "releaseDate": "2009-06-05"
+      },
+      {
+        "title": "Superbad",
+        "description": "Two teens navigate high school chaos.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000022/superbad.jpg",
+        "releaseDate": "2007-08-17"
+      },
+      {
+        "title": "Step Brothers",
+        "description": "Two grown men forced to live together.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000023/stepbrothers.jpg",
+        "releaseDate": "2008-07-25"
+      },
+      {
+        "title": "21 Jump Street",
+        "description": "Cops go undercover in high school.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000024/21jumpstreet.jpg",
+        "releaseDate": "2012-03-16"
+      },
+      {
+        "title": "Deadpool",
+        "description": "A wisecracking anti-hero’s origin.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000025/deadpool.jpg",
+        "releaseDate": "2016-02-12"
+      }
+    ]
+  },
+  {
+    "category": "Animated",
+    "movies": [
+      {
+        "title": "Toy Story",
+        "description": "Toys come to life when humans leave.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000031/toystory.jpg",
+        "releaseDate": "1995-11-22"
+      },
+      {
+        "title": "Finding Nemo",
+        "description": "A clownfish searches for his son.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000032/nemo.jpg",
+        "releaseDate": "2003-05-30"
+      },
+      {
+        "title": "Shrek",
+        "description": "An ogre’s adventure with a donkey.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000033/shrek.jpg",
+        "releaseDate": "2001-05-18"
+      },
+      {
+        "title": "The Lion King",
+        "description": "A lion prince reclaims his throne.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000034/lionking.jpg",
+        "releaseDate": "1994-06-24"
+      },
+      {
+        "title": "Frozen",
+        "description": "Two sisters face icy challenges.",
+        "image": "https://res.cloudinary.com/demo/image/upload/v1700000035/frozen.jpg",
+        "releaseDate": "2013-11-27"
+      }
+    ]
+  }
+]

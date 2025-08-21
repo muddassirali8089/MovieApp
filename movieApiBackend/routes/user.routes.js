@@ -1,29 +1,16 @@
-import express from "express"
-import { signup, login, forgotPassword, resetPassword, updateMyPassword, protect } from "../controllers/authContrller.js";
-import {deleteMe, getAllUsers, updateMe , getUser} from "../controllers/user.controller.js"
+import express from "express";
+import { login, protect, signup } from "../controllers/authController.js";
 import {loginLimiter} from "../utils/rateLimiters.js"
-import { verifyEmail } from "../controllers/verifyEmail.js";
+import { getProfile, updateProfile } from "../controllers/profileController.js";
 
 const router = express.Router();
 
+// Only signup route
+router.post("/signup", signup);
+router.post("/login",login)
 
-
-router.post("/forgotPassword" , forgotPassword)
-router.get("/resetPassword/:token", resetPassword);
-router.patch("/updateMyPassword", protect, updateMyPassword);
-router.patch("/updateMe" ,protect, updateMe)
-router.delete("/deleteMe" ,protect, deleteMe)
-
-router.get("/" , getAllUsers);
-router.post("/signup" , signup)
-router.patch("/verify-email/:token", verifyEmail);
-router.post("/login",   loginLimiter , login)
-router.get("/:id" , getUser)
-
-
-// router.post("/" , createUser);
-// router.delete("/:id" , deleteUser)
-// router.patch("/:id" , updateUser)
+router.get("/me", protect, getProfile);
+router.patch("/updateMe", protect, updateProfile);
 
 
 export default router;
