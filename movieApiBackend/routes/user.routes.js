@@ -2,11 +2,11 @@ import express from "express";
 import { login, protect, signup } from "../controllers/authController.js";
 import {loginLimiter} from "../utils/rateLimiters.js"
 import { getProfile, updateProfile } from "../controllers/profileController.js";
-
+import {upload} from "../controllers/upload.js";
 const router = express.Router();
 
 // Only signup route
-router.post("/signup", signup);
+router.post("/signup", upload.single("profileImage"), signup);
 router.post("/login",login)
 
 router.get("/me", protect, getProfile);

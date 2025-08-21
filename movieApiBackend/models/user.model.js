@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
     profileImage: {
       type: String,
       default:
-        "https://res.cloudinary.com/demo/image/upload/v1699999999/default-avatar.png",
+        "https://res.cloudinary.com/dujmvhjyt/image/upload/v1755785753/users/v1rron4l9ebzo2cwlr3x.jpg",
     },
 
   passwordChangedAt: Date,

@@ -2,6 +2,8 @@ import User from "../models/user.model.js";
 import catchAsync from "../controllers/catchAsync.js";
 import AppError from "../utils/AppError.js";
 import validator from "validator";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
 
 import jwt from "jsonwebtoken";
 import { promisify } from "util"; // 👈 import this at the top
@@ -33,8 +35,23 @@ export const createSendToken = (user, statusCode, res) => {
   });
 };
 
+
+
+// Make sure Cloudinary is configured
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 export const signup = catchAsync(async (req, res, next) => {
-  const { name, email, password, confirmPassword, address, profileImage } = req.body;
+
+  console.log("signup api call..");
+  
+
+  console.log(req.body);
+  
+  const { name, email, password, confirmPassword, address } = req.body;
 
   // 🔹 Validations
   if (!name || !email || !password || !confirmPassword) {
@@ -53,7 +70,38 @@ export const signup = catchAsync(async (req, res, next) => {
   // 🔹 Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new AppError("Email is already register.", 400));
+    return next(new AppError("Email is already registered.", 400));
+  }
+
+  let uploadedImageUrl;
+
+  if (req.file) {
+    // Upload profile image to Cloudinary
+    try {
+      const uploadStream = (fileBuffer) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: "users",
+              resource_type: "image",
+              format: "jpg",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          streamifier.createReadStream(fileBuffer).pipe(stream);
+        });
+      };
+
+      const uploadedImage = await uploadStream(req.file.buffer);
+      uploadedImageUrl = uploadedImage.secure_url;
+      console.log("Profile image uploaded:", uploadedImageUrl);
+    } catch (err) {
+      console.error("Cloudinary upload failed:", err);
+      return next(new AppError("Profile image upload failed: " + err.message, 500));
+    }
   }
 
   // 🔹 Create user
@@ -61,14 +109,15 @@ export const signup = catchAsync(async (req, res, next) => {
     name,
     email,
     password,
-    confirmPassword,   // ✅ important
+    confirmPassword,
     address,
-    profileImage: profileImage || undefined,
+    profileImage: uploadedImageUrl || undefined,
   });
 
   // 🔹 Send JWT + user data
   createSendToken(newUser, 201, res);
 });
+
 
 
 
