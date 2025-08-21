@@ -10,7 +10,8 @@ router.post("/signup", upload.single("profileImage"), signup);
 router.post("/login",login)
 
 router.get("/me", protect, getProfile);
-router.patch("/updateMe", protect, updateProfile);
+router.patch("/updateProfile", protect, upload.single("profileImage"), updateProfile);
+
 
 
 export default router;
