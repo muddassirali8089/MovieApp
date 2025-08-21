@@ -1,5 +1,5 @@
 import express from "express";
-import { getMovies, uploadMovie } from "../controllers/movieController.js";
+import { getMovies, getMoviesByCategory, uploadMovie } from "../controllers/movieController.js";
 import { protect } from "../controllers/authController.js";
 import {upload} from "../controllers/upload.js";
 const router = express.Router();
@@ -8,6 +8,7 @@ const router = express.Router();
 router.post("/", protect, upload.single("image"), uploadMovie);
 
 router.get("/", getMovies);  // ✅ no protect, public access
+router.get("/", getMoviesByCategory)
 
 // 2️⃣ Protected: rate a movie (login required)
 // router.post("/:id/rate", protect, rateMovie);

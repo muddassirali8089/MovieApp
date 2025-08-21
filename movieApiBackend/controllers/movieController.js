@@ -68,14 +68,51 @@ export const uploadMovie = catchAsync(async (req, res, next) => {
 });
 
 export const getMovies = catchAsync(async (req, res, next) => {
-  // Optional: Add query filtering
-  const { category, title } = req.query;
+
+  console.log("function call..");
+  
+  const { category } = req.query;
+
   let filter = {};
 
-  if (category) filter.category = category;
-  if (title) filter.title = { $regex: title, $options: "i" }; // Case-insensitive search
+  if (category) {
+    // Find the category document first
+    const categoryDoc = await Category.findOne({ name: category });
+    if (!categoryDoc) return next(new AppError("Category not found", 404));
+
+    filter.category = categoryDoc._id;
+  }
 
   const movies = await Movie.find(filter);
+
+  res.status(200).json({
+    status: "success",
+    results: movies.length,
+    data: { movies },
+  });
+});
+
+
+export const getMoviesByCategory = catchAsync(async (req, res, next) => {
+
+  console.log("api call");
+  
+  console.log(req.query);
+  
+  const { category } = req.query;
+
+  let query = {};
+
+  if (category) {
+    // Find category ID by name
+    const categoryDoc = await Category.findOne({ name: category });
+    if (!categoryDoc) return next(new AppError("Category not found", 404));
+
+    query.category = categoryDoc._id; // filter by category ObjectId
+  }
+
+  // Fetch movies
+  const movies = await Movie.find(query).populate("category", "name");
 
   res.status(200).json({
     status: "success",
