@@ -43,7 +43,7 @@ export default function ProfilePage() {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch('http://localhost:7000/api/v1/users/profile', {
+      const response = await fetch('http://localhost:7000/api/v1/users/me', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
@@ -97,8 +97,8 @@ export default function ProfilePage() {
         formDataToSend.append('image', profileImage)
       }
 
-      const response = await fetch('http://localhost:7000/api/v1/users/profile', {
-        method: 'PATCH',
+      const response = await fetch('http://localhost:7000/api/v1/users/updateProfile', {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },

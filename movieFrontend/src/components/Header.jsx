@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { 
   Menu, 
   X, 
-  Search, 
   User, 
   LogOut, 
   Settings, 
@@ -30,20 +29,60 @@ export default function Header() {
 
     window.addEventListener('scroll', handleScroll)
     
-    // Check if user is logged in (from localStorage)
+    // Check if user is logged in and fetch profile data
     const token = localStorage.getItem('auth_token')
     if (token) {
-      // You can verify the token here if needed
-      setUser({ name: 'User', email: 'user@example.com' })
+      fetchUserProfile(token)
     }
 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const fetchUserProfile = async (token) => {
+    try {
+      const response = await fetch('http://localhost:7000/api/v1/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.data && data.data.user) {
+          setUser({
+            name: data.data.user.name || 'User',
+            email: data.data.user.email || 'user@example.com',
+            address: data.data.user.address,
+            dateOfBirth: data.data.user.dateOfBirth,
+            image: data.data.user.image
+          })
+        }
+      } else {
+        // If token is invalid, remove it
+        localStorage.removeItem('auth_token')
+        setUser(null)
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+      // If there's an error, remove the token
+      localStorage.removeItem('auth_token')
+      setUser(null)
+    }
+  }
+
+  // Function to refresh user profile (can be called from other components)
+  const refreshUserProfile = () => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      fetchUserProfile(token)
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('auth_token')
     setUser(null)
     setIsUserMenuOpen(false)
+    setIsMenuOpen(false)
     router.push('/')
   }
 
@@ -74,31 +113,20 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-2 text-dark-300 hover:text-white transition-colors duration-200 group"
-              >
-                <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                {item.name}
-              </Link>
-            ))}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="text-white hover:text-primary-400 transition-colors">
+              Home
+            </Link>
+            <Link href="/movies" className="text-white hover:text-primary-400 transition-colors">
+              Movies
+            </Link>
+            <Link href="/categories" className="text-white hover:text-primary-400 transition-colors">
+              Categories
+            </Link>
           </nav>
 
-          {/* Right Section */}
-          <div className="flex items-center gap-4">
-            {/* Search Button */}
-            <motion.button
-              className="p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-all duration-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Search className="w-5 h-5" />
-            </motion.button>
-
-            {/* User Menu or Login */}
+          {/* Right Side */}
+          <div className="flex items-center space-x-4">
             {user ? (
               <div className="relative">
                 <motion.button
@@ -107,9 +135,17 @@ export default function Header() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
+                  {user.image ? (
+                    <img 
+                      src={user.image} 
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full object-cover border-2 border-primary-600"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                   <span className="hidden sm:block">{user.name}</span>
                 </motion.button>
 
@@ -126,6 +162,14 @@ export default function Header() {
                       <div className="px-4 py-2 border-b border-dark-600">
                         <p className="text-sm text-white font-medium">{user.name}</p>
                         <p className="text-xs text-dark-400">{user.email}</p>
+                        {user.address && (
+                          <p className="text-xs text-dark-400 mt-1">{user.address}</p>
+                        )}
+                        {user.dateOfBirth && (
+                          <p className="text-xs text-dark-400">
+                            {new Date(user.dateOfBirth).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                       
                       <div className="py-1">
@@ -169,41 +213,62 @@ export default function Header() {
             )}
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-all duration-200"
-            >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            <div className="md:hidden">
+              <motion.button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-white hover:text-primary-400 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </motion.button>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              className="md:hidden border-t border-dark-700/50"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <nav className="py-4 space-y-2">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center gap-3 px-4 py-3 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {item.name}
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="md:hidden absolute top-full left-0 right-0 bg-dark-800 border-t border-dark-700 py-4"
+          >
+            <nav className="flex flex-col space-y-4 px-6">
+              <Link href="/" className="text-white hover:text-primary-400 transition-colors py-2">
+                Home
+              </Link>
+              <Link href="/movies" className="text-white hover:text-primary-400 transition-colors py-2">
+                Movies
+              </Link>
+              <Link href="/categories" className="text-white hover:text-primary-400 transition-colors py-2">
+                Categories
+              </Link>
+              {user ? (
+                <>
+                  <Link href="/profile" className="text-white hover:text-primary-400 transition-colors py-2">
+                    Profile
                   </Link>
-                ))}
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <button
+                    onClick={handleLogout}
+                    className="text-white hover:text-primary-400 transition-colors py-2 text-left"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-white hover:text-primary-400 transition-colors py-2">
+                    Login
+                  </Link>
+                  <Link href="/signup" className="text-white hover:text-primary-400 transition-colors py-2">
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </nav>
+          </motion.div>
+        )}
       </div>
     </header>
   )
