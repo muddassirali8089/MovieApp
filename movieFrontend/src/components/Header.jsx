@@ -11,7 +11,6 @@ import {
   User, 
   LogOut, 
   Settings, 
-  Heart,
   Star,
   Home,
   Film
@@ -52,7 +51,6 @@ export default function Header() {
     { name: 'Home', href: '/', icon: Home },
     { name: 'Movies', href: '/movies', icon: Film },
     { name: 'Categories', href: '/categories', icon: Star },
-    { name: 'Favorites', href: '/favorites', icon: Heart },
   ]
 
   return (

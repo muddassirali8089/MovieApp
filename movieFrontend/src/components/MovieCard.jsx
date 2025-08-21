@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, Heart, Play, Calendar } from 'lucide-react'
+import { Star, Play, Calendar } from 'lucide-react'
 import { useState } from 'react'
 
 export default function MovieCard({ movie }) {
@@ -88,11 +88,6 @@ export default function MovieCard({ movie }) {
             {movie.category?.name || 'Unknown'}
           </span>
         </div>
-
-        {/* Like Button */}
-        <button className="absolute top-3 right-3 p-2 bg-dark-800/80 rounded-full text-dark-300 hover:text-red-400 hover:bg-dark-700 transition-all duration-200 backdrop-blur-sm">
-          <Heart className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Movie Info */}
@@ -126,9 +121,9 @@ export default function MovieCard({ movie }) {
           {movie.description}
         </p>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
-          <Link href={`/movie/${movie._id}`} className="flex-1">
+        {/* Action Button */}
+        <div className="pt-2">
+          <Link href={`/movie/${movie._id}`} className="block">
             <motion.button
               className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
               whileHover={{ scale: 1.02 }}
@@ -137,14 +132,6 @@ export default function MovieCard({ movie }) {
               View Details
             </motion.button>
           </Link>
-          
-          <motion.button
-            className="p-2 bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-white rounded-lg transition-colors duration-200"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Heart className="w-4 h-4" />
-          </motion.button>
         </div>
       </div>
     </motion.div>

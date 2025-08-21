@@ -14,7 +14,6 @@ import {
   X, 
   Camera,
   Star,
-  Heart,
   Film
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -340,7 +339,7 @@ export default function ProfilePage() {
 
         {/* Stats Section */}
         <motion.div
-          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -351,14 +350,6 @@ export default function ProfilePage() {
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">0</h3>
             <p className="text-dark-300">Movies Rated</p>
-          </div>
-
-          <div className="bg-dark-800 rounded-xl p-6 text-center border border-dark-700">
-            <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-8 h-8 text-red-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">0</h3>
-            <p className="text-dark-300">Favorites</p>
           </div>
 
           <div className="bg-dark-800 rounded-xl p-6 text-center border border-dark-700">

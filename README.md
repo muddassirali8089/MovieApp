@@ -265,7 +265,7 @@ This project is licensed under the MIT License.
 
 ## 🔮 Future Enhancements
 
-- [ ] User watchlists and favorites
+- [ ] User watchlists
 - [ ] Advanced search filters
 - [ ] Movie recommendations
 - [ ] Social features (reviews, comments)

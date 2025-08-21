@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Star, Calendar, Clock, Play, Heart, Share2 } from 'lucide-react'
+import { ArrowLeft, Star, Calendar, Clock, Play, Share2 } from 'lucide-react'
 import MovieRating from '@/components/MovieRating'
 import toast from 'react-hot-toast'
 
 export default function MovieDetailPage() {
   const [movie, setMovie] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isLiked, setIsLiked] = useState(false)
   const params = useParams()
   const router = useRouter()
 
@@ -156,20 +155,6 @@ export default function MovieDetailPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3 mt-4">
-              <motion.button
-                onClick={() => setIsLiked(!isLiked)}
-                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-                  isLiked 
-                    ? 'bg-red-600 text-white hover:bg-red-700' 
-                    : 'bg-dark-700 text-white hover:bg-dark-600 border border-dark-600'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Heart className={`w-5 h-5 inline mr-2 ${isLiked ? 'fill-current' : ''}`} />
-                {isLiked ? 'Liked' : 'Like'}
-              </motion.button>
-              
               <motion.button
                 className="p-3 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-xl transition-colors"
                 whileHover={{ scale: 1.05 }}

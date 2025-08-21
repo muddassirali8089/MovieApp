@@ -17,8 +17,7 @@ export default function Footer() {
     'Account': [
       { name: 'Sign Up', href: '/signup' },
       { name: 'Login', href: '/login' },
-      { name: 'Profile', href: '/profile' },
-      { name: 'Favorites', href: '/favorites' }
+      { name: 'Profile', href: '/profile' }
     ],
     'Support': [
       { name: 'Help Center', href: '/help' },
