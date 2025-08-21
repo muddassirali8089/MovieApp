@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { Eye, EyeOff, Mail, Lock, Film } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { login } = useAuth()
 
   const handleChange = (e) => {
     setFormData({
@@ -39,8 +41,8 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Save token to localStorage
-        localStorage.setItem('auth_token', data.token)
+        // Use the login function from AuthContext
+        login(data.token)
         toast.success('Login successful! Welcome back!')
         router.push('/')
       } else {

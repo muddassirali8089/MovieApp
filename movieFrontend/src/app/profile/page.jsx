@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   User, 
   Mail, 
@@ -12,14 +13,11 @@ import {
   Edit3, 
   Save, 
   X, 
-  Camera,
-  Star,
-  Film
+  Camera
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -31,44 +29,23 @@ export default function ProfilePage() {
   })
   const [profileImage, setProfileImage] = useState(null)
   const router = useRouter()
+  const { user, refreshUserProfile } = useAuth()
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
-    if (!token) {
+    if (!user) {
       router.push('/login')
       return
     }
-    fetchUserProfile()
-  }, [])
-
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch('http://localhost:7000/api/v1/users/me', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.data.user)
-        setFormData({
-          name: data.data.user.name || '',
-          email: data.data.user.email || '',
-          address: data.data.user.address || '',
-          dateOfBirth: data.data.user.dateOfBirth ? data.data.user.dateOfBirth.split('T')[0] : ''
-        })
-      } else {
-        toast.error('Failed to load profile')
-        router.push('/login')
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      toast.error('Failed to load profile')
-    } finally {
-      setLoading(false)
-    }
-  }
+    
+    // Set form data from user context
+    setFormData({
+      name: user.name || '',
+      email: user.email || '',
+      address: user.address || '',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : ''
+    })
+    setLoading(false)
+  }, [user, router])
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -91,14 +68,27 @@ export default function ProfilePage() {
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
       formDataToSend.append('address', formData.address)
-      formDataToSend.append('dateOfBirth', formData.dateOfBirth)
+      
+      // Only append dateOfBirth if it's not empty
+      if (formData.dateOfBirth && formData.dateOfBirth.trim() !== '') {
+        formDataToSend.append('dateOfBirth', formData.dateOfBirth)
+      }
       
       if (profileImage) {
-        formDataToSend.append('image', profileImage)
+        formDataToSend.append('profileImage', profileImage)
       }
 
+      // Debug: Log what we're sending
+      console.log('Sending profile update:', {
+        name: formData.name,
+        address: formData.address,
+        dateOfBirth: formData.dateOfBirth,
+        hasImage: !!profileImage,
+        imageName: profileImage?.name
+      })
+
       const response = await fetch('http://localhost:7000/api/v1/users/updateProfile', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
@@ -107,12 +97,14 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.data.user)
+        console.log('Profile update successful:', data)
+        refreshUserProfile() // Update user in context
         toast.success('Profile updated successfully!')
         setIsEditing(false)
         setProfileImage(null)
       } else {
         const errorData = await response.json()
+        console.error('Profile update failed:', errorData)
         toast.error(errorData.message || 'Failed to update profile')
       }
     } catch (error) {
@@ -223,11 +215,6 @@ export default function ProfilePage() {
                   <Calendar className="w-5 h-5" />
                   <span>{formatDate(user.dateOfBirth)}</span>
                 </div>
-                
-                <div className="flex items-center gap-3 text-dark-300">
-                  <User className="w-5 h-5" />
-                  <span>Member since {new Date(user.createdAt).getFullYear()}</span>
-                </div>
               </div>
 
               {/* Action Buttons */}
@@ -337,29 +324,7 @@ export default function ProfilePage() {
           </motion.div>
         )}
 
-        {/* Stats Section */}
-        <motion.div
-          className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <div className="bg-dark-800 rounded-xl p-6 text-center border border-dark-700">
-            <div className="w-16 h-16 bg-primary-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Star className="w-8 h-8 text-primary-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">0</h3>
-            <p className="text-dark-300">Movies Rated</p>
-          </div>
 
-          <div className="bg-dark-800 rounded-xl p-6 text-center border border-dark-700">
-            <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Film className="w-8 h-8 text-blue-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">0</h3>
-            <p className="text-dark-300">Watchlist</p>
-          </div>
-        </motion.div>
       </div>
     </div>
   )

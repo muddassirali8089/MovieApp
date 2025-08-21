@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Menu, 
   X, 
@@ -19,7 +20,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [user, setUser] = useState(null)
+  const { user, logout } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -28,59 +29,11 @@ export default function Header() {
     }
 
     window.addEventListener('scroll', handleScroll)
-    
-    // Check if user is logged in and fetch profile data
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      fetchUserProfile(token)
-    }
-
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const fetchUserProfile = async (token) => {
-    try {
-      const response = await fetch('http://localhost:7000/api/v1/users/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.data && data.data.user) {
-          setUser({
-            name: data.data.user.name || 'User',
-            email: data.data.user.email || 'user@example.com',
-            address: data.data.user.address,
-            dateOfBirth: data.data.user.dateOfBirth,
-            image: data.data.user.image
-          })
-        }
-      } else {
-        // If token is invalid, remove it
-        localStorage.removeItem('auth_token')
-        setUser(null)
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
-      // If there's an error, remove the token
-      localStorage.removeItem('auth_token')
-      setUser(null)
-    }
-  }
-
-  // Function to refresh user profile (can be called from other components)
-  const refreshUserProfile = () => {
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      fetchUserProfile(token)
-    }
-  }
-
   const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    setUser(null)
+    logout()
     setIsUserMenuOpen(false)
     setIsMenuOpen(false)
     router.push('/')
@@ -135,9 +88,9 @@ export default function Header() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {user.image ? (
+                  {user.profileImage ? (
                     <img 
-                      src={user.image} 
+                      src={user.profileImage} 
                       alt={user.name}
                       className="w-8 h-8 rounded-full object-cover border-2 border-primary-600"
                     />
@@ -173,6 +126,12 @@ export default function Header() {
                       </div>
                       
                       <div className="py-1">
+                        <Link href="/profile">
+                          <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            Profile
+                          </button>
+                        </Link>
                         <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
                           <Settings className="w-4 h-4" />
                           Settings

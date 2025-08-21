@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 export default function MovieRating({ movieId, initialRating = 0, onRatingChange }) {
@@ -12,6 +13,7 @@ export default function MovieRating({ movieId, initialRating = 0, onRatingChange
   const [hasRated, setHasRated] = useState(false)
   const [userRating, setUserRating] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,10 +21,17 @@ export default function MovieRating({ movieId, initialRating = 0, onRatingChange
     }, 100) // Small delay to prevent flickering
     
     return () => clearTimeout(timer)
-  }, [movieId])
+  }, [movieId, user])
 
   const checkUserRating = async () => {
     try {
+      if (!user) {
+        setLoading(false)
+        setHasRated(false)
+        return
+      }
+
+      // Get token from localStorage for API call
       const token = localStorage.getItem('auth_token')
       if (!token) {
         setLoading(false)
@@ -88,7 +97,7 @@ export default function MovieRating({ movieId, initialRating = 0, onRatingChange
   }
 
   const handleRatingSubmit = async (newRating) => {
-    if (!localStorage.getItem('auth_token')) {
+    if (!user) {
       toast.error('Please login to rate movies')
       return
     }
