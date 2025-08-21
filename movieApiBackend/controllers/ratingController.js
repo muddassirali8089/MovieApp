@@ -65,6 +65,27 @@ export const rateMovie = catchAsync(async (req, res, next) => {
   });
 });
 
+// @desc   Get all movies rated by the current user
+// @route  GET /api/v1/users/my-ratings
+// @access Private
+export const getMyRatings = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+
+  const ratings = await Rating.find({ user: userId })
+    .populate({
+      path: 'movie',
+      select: 'title posterImage genre releaseYear averageRating'
+    })
+    .sort({ createdAt: -1 }) // Most recent first
+    .select('-__v');
+
+  res.status(200).json({
+    status: "success",
+    results: ratings.length,
+    data: { ratings },
+  });
+});
+
 // @desc   Get user's rating for a specific movie
 // @route  GET /api/v1/movies/:id/my-rating
 // @access Private

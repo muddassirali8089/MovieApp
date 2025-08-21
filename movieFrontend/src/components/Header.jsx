@@ -132,6 +132,12 @@ export default function Header() {
                             Profile
                           </button>
                         </Link>
+                        <Link href="/my-ratings">
+                          <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
+                            <Star className="w-4 h-4" />
+                            My Ratings
+                          </button>
+                        </Link>
                         <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
                           <Settings className="w-4 h-4" />
                           Settings
@@ -207,6 +213,9 @@ export default function Header() {
                 <>
                   <Link href="/profile" className="text-white hover:text-primary-400 transition-colors py-2">
                     Profile
+                  </Link>
+                  <Link href="/my-ratings" className="text-white hover:text-primary-400 transition-colors py-2">
+                    My Ratings
                   </Link>
                   <button
                     onClick={handleLogout}

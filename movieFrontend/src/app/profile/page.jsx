@@ -16,6 +16,7 @@ import {
   Camera
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import MyRatedMovies from '@/components/MyRatedMovies'
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
@@ -324,6 +325,16 @@ export default function ProfilePage() {
           </motion.div>
         )}
 
+        {/* My Rated Movies */}
+        <motion.div 
+          id="ratings"
+          className="mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <MyRatedMovies />
+        </motion.div>
 
       </div>
     </div>
