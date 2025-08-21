@@ -100,6 +100,12 @@ if (process.env.NODE_ENV === "development") {
 // ✅ Connect DB
 await connectDB();
 
+console.log("Cloudinary Config:");
+console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
+console.log("API Key   :", process.env.CLOUDINARY_API_KEY);
+// Do not log API secret for security
+
+
 // Custom middleware
 // app.use((req, res, next) => {
 //   req.requestTime = new Date().toISOString();
