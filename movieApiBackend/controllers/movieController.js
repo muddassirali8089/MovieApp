@@ -93,30 +93,3 @@ export const getMovies = catchAsync(async (req, res, next) => {
 });
 
 
-export const getMoviesByCategory = catchAsync(async (req, res, next) => {
-
-  console.log("api call");
-  
-  console.log(req.query);
-  
-  const { category } = req.query;
-
-  let query = {};
-
-  if (category) {
-    // Find category ID by name
-    const categoryDoc = await Category.findOne({ name: category });
-    if (!categoryDoc) return next(new AppError("Category not found", 404));
-
-    query.category = categoryDoc._id; // filter by category ObjectId
-  }
-
-  // Fetch movies
-  const movies = await Movie.find(query).populate("category", "name");
-
-  res.status(200).json({
-    status: "success",
-    results: movies.length,
-    data: { movies },
-  });
-});
