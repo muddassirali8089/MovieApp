@@ -1,21 +1,21 @@
 import express from "express";
-import { getMovies,  uploadMovie } from "../controllers/movieController.js";
+import { getMovies, getMovie, uploadMovie } from "../controllers/movieController.js";
 import { protect } from "../controllers/authController.js";
-
-
-import {upload} from "../controllers/upload.js";
+import { rateMovie, getMyRating, getMovieRatings } from "../controllers/ratingController.js";
+import { upload } from "../controllers/upload.js";
 import { getCategories } from "../controllers/categoryController.js";
+
 const router = express.Router();
 
-// 1️⃣ Public: get all movies (optional search & category filter)
-router.post("/", protect, upload.single("image"), uploadMovie);
+// Public routes
+router.get("/", getMovies); // Get all movies with search, category filter, and sorting
+router.get("/categories", getCategories); // Get all categories
+router.get("/:id", getMovie); // Get single movie by ID
+router.get("/:id/ratings", getMovieRatings); // Get all ratings for a movie
 
-router.get("/", getMovies); 
-router.get("/categories", getCategories);
- 
-
-
-// 2️⃣ Protected: rate a movie (login required)
-// router.post("/:id/rate", protect, rateMovie);
+// Protected routes (login required)
+router.post("/", protect, upload.single("image"), uploadMovie); // Upload new movie
+router.post("/:id/rate", protect, rateMovie); // Rate a movie
+router.get("/:id/my-rating", protect, getMyRating); // Get user's rating for a movie
 
 export default router;

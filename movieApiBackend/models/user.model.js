@@ -44,10 +44,11 @@ const userSchema = new mongoose.Schema(
       default:
         "https://res.cloudinary.com/dujmvhjyt/image/upload/v1755785753/users/v1rron4l9ebzo2cwlr3x.jpg",
     },
+    dateOfBirth: {
+      type: Date,
+    },
 
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
+
   },
 
   
@@ -80,17 +81,7 @@ userSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
-      10
-    );
 
-    return JWTTimestamp < changedTimestamp; // true means password was changed
-  }
-  return false; // false means password not changed after JWT issued
-};
 
 const User = mongoose.model("User", userSchema);
 export default User;

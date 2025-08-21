@@ -16,10 +16,6 @@ import connectDB from "./connection/connectDB.js";
 // Routers
 import userRouter from "./routes/user.routes.js";
 import movieRouter from "./routes/movie.routes.js";
-// import authRouter from "./routes/auth.routes.js";
-// import categoryRouter from "./routes/category.routes.js";
-// import movieRouter from "./routes/movie.routes.js";
-// import ratingRouter from "./routes/rating.routes.js";
 
 // ✅ Catch uncaught exceptions (synchronous errors)
 process.on("uncaughtException", (err) => {

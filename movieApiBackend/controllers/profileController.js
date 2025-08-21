@@ -34,16 +34,18 @@ cloudinary.config({
 });
 
 export const updateProfile = catchAsync(async (req, res, next) => {
-  const userId = req.user._id; // Assume protect middleware sets req.user
-  const { name } = req.body;
+  const userId = req.user._id;
+  const { name, address, dateOfBirth } = req.body;
 
-  if (!name && !req.file) {
-    return next(new AppError("Provide a name or image to update!", 400));
+  if (!name && !address && !dateOfBirth && !req.file) {
+    return next(new AppError("Provide at least one field to update!", 400));
   }
 
   const updateData = {};
 
   if (name) updateData.name = name;
+  if (address) updateData.address = address;
+  if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
 
   if (req.file) {
     // Upload new image to Cloudinary

@@ -3,13 +3,22 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Environment variables (CRITICAL - Never commit these!)
+# Next.js build output
+.next/
+out/
+dist/
+
+# Environment variables
 .env
 .env.local
-.env.development
-.env.production
-.env.test
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
 
 # Logs
 logs
@@ -29,7 +38,6 @@ coverage/
 *.lcov
 
 # Build outputs
-dist/
 build/
 
 # Temporary folders
@@ -41,31 +49,19 @@ temp/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS generated files
 .DS_Store
 .DS_Store?
 ._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
 # Upload directories
-uploads/
 public/uploads/
-
-# Seed data and scripts (optional - exclude if you don't want to share)
-dev-data/
-seeds/
-*.seed.js
-
-# API keys and secrets
-config/secrets.js
-config/keys.js
-config/database.js
 
 # Test files
 test/
@@ -87,18 +83,15 @@ local/
 # package-lock.json
 # yarn.lock
 
-# Logs directory
-logs/
+# Storybook build outputs
+.storybook-out
 
-# PM2 files
-ecosystem.config.js
-.pm2/
+# Cache
+.cache
+.parcel-cache
 
-# SSL certificates
-*.pem
-*.key
-*.crt
-*.csr
+# ESLint cache
+.eslintcache
 
-# Cloudinary credentials
-cloudinary.json
+# Stylelint cache
+.stylelintcache

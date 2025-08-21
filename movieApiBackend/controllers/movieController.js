@@ -68,27 +68,61 @@ export const uploadMovie = catchAsync(async (req, res, next) => {
 });
 
 export const getMovies = catchAsync(async (req, res, next) => {
-
-  console.log("function call..");
-  
-  const { category } = req.query;
+  const { category, search, sort = "title" } = req.query;
 
   let filter = {};
 
+  // Category filter
   if (category) {
-    // Find the category document first
     const categoryDoc = await Category.findOne({ name: category });
     if (!categoryDoc) return next(new AppError("Category not found", 404));
-
     filter.category = categoryDoc._id;
   }
 
-  const movies = await Movie.find(filter);
+  // Search filter
+  if (search) {
+    filter.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } }
+    ];
+  }
+
+  // Build query with filters and populate category
+  let query = Movie.find(filter).populate("category", "name");
+
+  // Sorting
+  if (sort === "rating") {
+    query = query.sort({ averageRating: -1 });
+  } else if (sort === "date") {
+    query = query.sort({ releaseDate: -1 });
+  } else {
+    query = query.sort({ title: 1 });
+  }
+
+  const movies = await query;
 
   res.status(200).json({
     status: "success",
     results: movies.length,
     data: { movies },
+  });
+});
+
+// @desc   Get single movie by ID
+// @route  GET /api/v1/movies/:id
+// @access Public
+export const getMovie = catchAsync(async (req, res, next) => {
+  const movie = await Movie.findById(req.params.id)
+    .populate("category", "name")
+    .populate("ratings.user", "name profileImage");
+
+  if (!movie) {
+    return next(new AppError("Movie not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: { movie },
   });
 });
 
