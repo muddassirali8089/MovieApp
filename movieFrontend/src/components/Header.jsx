@@ -32,11 +32,26 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isUserMenuOpen && !event.target.closest('.user-dropdown')) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isUserMenuOpen])
+
   const handleLogout = () => {
     logout()
     setIsUserMenuOpen(false)
     setIsMenuOpen(false)
     router.push('/')
+  }
+
+  const closeUserMenu = () => {
+    setIsUserMenuOpen(false)
   }
 
   const navigation = [
@@ -81,7 +96,7 @@ export default function Header() {
           {/* Right Side */}
           <div className="flex items-center space-x-4">
             {user ? (
-              <div className="relative">
+              <div className="relative user-dropdown">
                 <motion.button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-all duration-200"
@@ -126,13 +141,13 @@ export default function Header() {
                       </div>
                       
                       <div className="py-1">
-                        <Link href="/profile">
+                        <Link href="/profile" onClick={closeUserMenu}>
                           <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Profile
                           </button>
                         </Link>
-                        <Link href="/my-ratings">
+                        <Link href="/my-ratings" onClick={closeUserMenu}>
                           <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
                             <Star className="w-4 h-4" />
                             My Ratings
@@ -200,21 +215,21 @@ export default function Header() {
             className="md:hidden absolute top-full left-0 right-0 bg-dark-800 border-t border-dark-700 py-4"
           >
             <nav className="flex flex-col space-y-4 px-6">
-              <Link href="/" className="text-white hover:text-primary-400 transition-colors py-2">
+              <Link href="/" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Home
               </Link>
-              <Link href="/movies" className="text-white hover:text-primary-400 transition-colors py-2">
+              <Link href="/movies" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Movies
               </Link>
-              <Link href="/categories" className="text-white hover:text-primary-400 transition-colors py-2">
+              <Link href="/categories" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                 Categories
               </Link>
               {user ? (
                 <>
-                  <Link href="/profile" className="text-white hover:text-primary-400 transition-colors py-2">
+                  <Link href="/profile" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Profile
                   </Link>
-                  <Link href="/my-ratings" className="text-white hover:text-primary-400 transition-colors py-2">
+                  <Link href="/my-ratings" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     My Ratings
                   </Link>
                   <button
@@ -226,10 +241,10 @@ export default function Header() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-white hover:text-primary-400 transition-colors py-2">
+                  <Link href="/login" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Login
                   </Link>
-                  <Link href="/signup" className="text-white hover:text-primary-400 transition-colors py-2">
+                  <Link href="/signup" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Sign Up
                   </Link>
                 </>
