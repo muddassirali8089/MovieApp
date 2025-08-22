@@ -1,5 +1,5 @@
 import express from "express";
-import { getMovies, getMovie, uploadMovie, getMovieRecommendations, getAdvancedRecommendations, getCategoryBasedRecommendations, getComprehensiveRecommendations } from "../controllers/movieController.js";
+import { getMovies, getMovie, uploadMovie, getMovieRecommendations } from "../controllers/movieController.js";
 import { protect } from "../controllers/authController.js";
 import { rateMovie, getMyRating, getMovieRatings, getMyRatings } from "../controllers/ratingController.js";
 import { upload } from "../controllers/upload.js";
@@ -13,9 +13,6 @@ router.get("/categories", getCategories); // Get all categories
 
 // Protected routes (login required) - MUST come BEFORE :id routes
 router.get("/recommendations", protect, getMovieRecommendations); // Get personalized movie recommendations
-router.get("/recommendations/advanced", protect, getAdvancedRecommendations); // Get advanced collaborative filtering recommendations
-router.get("/recommendations/category", protect, getCategoryBasedRecommendations); // Get category-based recommendations
-router.get("/recommendations/comprehensive", protect, getComprehensiveRecommendations); // Get comprehensive recommendations combining all methods
 router.get("/my-ratings", protect, getMyRatings); // Get user's rated movies
 
 // Dynamic routes (must come after specific routes)

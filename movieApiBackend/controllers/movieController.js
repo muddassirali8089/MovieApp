@@ -141,11 +141,18 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
     rating: { $gte: 4 }
   }).populate('movie', 'category');
 
+  // Step 1.5: Get ALL movies user has rated (to exclude them completely)
+  const allUserRatings = await Rating.find({ user: userId });
+  const userRatedMovieIds = allUserRatings.map(r => r.movie);
+
   if (userHighRatings.length === 0) {
-    // If user has no high ratings, return popular movies
+    // If user has no high ratings, return popular movies (excluding rated ones)
     const popularMovies = await Movie.aggregate([
       {
-        $match: { averageRating: { $gte: 3.5 } }
+        $match: { 
+          _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
+          averageRating: { $gte: 3.5 } 
+        }
       },
       {
         $lookup: {
@@ -188,13 +195,12 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
 
   // Step 2: Extract categories and movies the user likes
   const userLikedCategories = [...new Set(userHighRatings.map(r => r.movie.category._id.toString()))];
-  const userRatedMovieIds = userHighRatings.map(r => r.movie._id);
-
-  // Step 3: Find movies in similar categories that user hasn't rated
+  
+  // Step 3: Find movies in similar categories that user hasn't rated AT ALL
   const recommendations = await Movie.aggregate([
     {
       $match: {
-        _id: { $nin: userRatedMovieIds }, // Exclude already rated movies
+        _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) }, // Exclude ALL rated movies
         category: { $in: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) }
       }
     },
@@ -216,7 +222,7 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
           $add: [
             { $multiply: ['$averageRating', 0.6] }, // 60% weight to rating
             { $cond: [{ $gte: ['$averageRating', 4] }, 0.3, 0] }, // Bonus for high ratings
-            { $cond: [{ $gte: ['$ratings', { $size: '$ratings' }] }, 0.1, 0] } // Bonus for more ratings
+            { $cond: [{ $gte: [{ $size: '$ratings' }, 5] }, 0.1, 0] } // Bonus for movies with 5+ ratings
           ]
         }
       }
@@ -241,12 +247,13 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
     }
   ]);
 
-  // Step 4: If we don't have enough recommendations, add some popular movies
+  // Step 4: If we don't have enough recommendations, add some popular movies from other categories
   if (recommendations.length < limit) {
     const additionalMovies = await Movie.aggregate([
       {
         $match: {
-          _id: { $nin: [...userRatedMovieIds, ...recommendations.map(r => r._id)] }
+          _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
+          category: { $nin: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) } // Different categories
         }
       },
       {
@@ -261,6 +268,11 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
         $unwind: '$categoryInfo'
       },
       {
+        $addFields: {
+          recommendationScore: '$averageRating'
+        }
+      },
+      {
         $project: {
           _id: 1,
           title: 1,
@@ -269,11 +281,11 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
           averageRating: 1,
           releaseDate: 1,
           category: '$categoryInfo.name',
-          recommendationScore: { $round: ['$averageRating', 2] }
+          recommendationScore: { $round: ['$recommendationScore', 2] }
         }
       },
       {
-        $sort: { averageRating: -1 }
+        $sort: { recommendationScore: -1 }
       },
       {
         $limit: limit - recommendations.length
