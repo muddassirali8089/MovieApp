@@ -147,7 +147,7 @@ export default function MoviesPage() {
               
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 sm:px-6 sm:py-3 px-4 py-2 ${
+                className={`px-4 sm:px-6 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 ${
                   showFilters 
                     ? 'bg-primary-600 text-white' 
                     : 'bg-dark-700 text-dark-300 hover:bg-dark-600 border border-dark-600'

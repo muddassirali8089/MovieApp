@@ -12,9 +12,6 @@ import mongoose from "mongoose";
 export const uploadMovie = catchAsync(async (req, res, next) => {
   const { title, description, category, releaseDate } = req.body;
 
-  const categoryDoc = await Category.findOne({ name: category });
-  if (!categoryDoc) return next(new AppError("Category not found", 404));
-
   // Validation
   if (!title || !category) {
     return next(new AppError("Title and category are required!", 400));
@@ -22,6 +19,19 @@ export const uploadMovie = catchAsync(async (req, res, next) => {
 
   if (!req.file) {
     return next(new AppError("Please upload an image!", 400));
+  }
+
+  let categoryDoc = await Category.findOne({ name: category });
+  
+  // If category doesn't exist, create it automatically
+  if (!categoryDoc) {
+    try {
+      categoryDoc = await Category.create({ name: category });
+      console.log(`Created new category: ${category}`);
+    } catch (err) {
+      console.error("Error creating category:", err);
+      return next(new AppError("Failed to create category: " + err.message, 500));
+    }
   }
 
   let uploadedImage;

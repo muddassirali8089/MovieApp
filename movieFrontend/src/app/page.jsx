@@ -121,7 +121,7 @@ export default function HomePage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="input-field min-w-[140px] sm:min-w-[140px] min-w-[100px] text-sm"
+                className="input-field  sm:min-w-[140px] text-sm"
               >
                 <option value="title">Sort by Title</option>
                 <option value="rating">Sort by Rating</option>
