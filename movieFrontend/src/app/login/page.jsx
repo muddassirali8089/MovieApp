@@ -5,9 +5,10 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Eye, EyeOff, Mail, Lock, Film } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Film, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import SimpleAuthRedirect from '@/components/SimpleAuthRedirect'
+import { handleRateLimit, handleLoginAttempts } from '@/utils/rateLimitHandler'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,8 @@ export default function LoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState(0)
+  const [isBlocked, setIsBlocked] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
 
@@ -28,6 +31,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Check if user is blocked
+    if (isBlocked) {
+      toast.error('Account is temporarily blocked. Please try again after 1 hour.')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -39,15 +49,36 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       })
 
-      const data = await response.json()
+      // Handle rate limiting first
+      if (handleRateLimit(response, 'Login failed. Please try again.')) {
+        setLoading(false)
+        setIsBlocked(true)
+        return
+      }
 
       if (response.ok) {
+        const data = await response.json()
+        // Reset attempts on successful login
+        setLoginAttempts(0)
+        setIsBlocked(false)
         // Use the login function from AuthContext
         login(data.token)
         toast.success('Login successful! Welcome back!')
         router.push('/')
       } else {
-        toast.error(data.message || 'Login failed. Please try again.')
+        // Handle failed login attempts
+        const attemptInfo = handleLoginAttempts(response, loginAttempts + 1)
+        const newAttemptCount = loginAttempts + 1
+        
+        if (attemptInfo.isRateLimited) {
+          setIsBlocked(true)
+          setLoginAttempts(5)
+        } else {
+          setLoginAttempts(newAttemptCount)
+          if (newAttemptCount >= 5) {
+            setIsBlocked(true)
+          }
+        }
       }
     } catch (error) {
       console.error('Login error:', error)
@@ -55,6 +86,17 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const getAttemptMessage = () => {
+    if (isBlocked) {
+      return 'Account temporarily blocked. Please try again after 1 hour.'
+    }
+    if (loginAttempts > 0) {
+      const remaining = 5 - loginAttempts
+      return `Invalid credentials. You have ${remaining} attempts left.`
+    }
+    return ''
   }
 
   return (
@@ -85,6 +127,23 @@ export default function LoginPage() {
             <p className="text-dark-300">Sign in to your MovieZone account</p>
           </motion.div>
 
+          {/* Attempt Warning */}
+          {(loginAttempts > 0 || isBlocked) && (
+            <motion.div
+              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                <div>
+                  <p className="text-red-400 font-medium">Login Attempt Warning</p>
+                  <p className="text-sm text-red-300">{getAttemptMessage()}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Login Form */}
           <motion.div
             className="bg-dark-800 rounded-2xl p-8 shadow-2xl border border-dark-700"
@@ -109,7 +168,8 @@ export default function LoginPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                    disabled={isBlocked}
+                    className="w-full pl-10 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your email"
                   />
                 </div>
@@ -131,13 +191,15 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pl-10 pr-12 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                    disabled={isBlocked}
+                    className="w-full pl-10 pr-12 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                    disabled={isBlocked}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-dark-400 hover:text-white transition-colors disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -147,12 +209,12 @@ export default function LoginPage() {
               {/* Submit Button */}
               <motion.button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isBlocked}
                 className="w-full btn-primary py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: loading ? 1 : 1.02 }}
-                whileTap={{ scale: loading ? 1 : 0.98 }}
+                whileHover={{ scale: (loading || isBlocked) ? 1 : 1.02 }}
+                whileTap={{ scale: (loading || isBlocked) ? 1 : 0.98 }}
               >
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? 'Signing In...' : isBlocked ? 'Account Blocked' : 'Sign In'}
               </motion.button>
             </form>
 
@@ -165,11 +227,17 @@ export default function LoginPage() {
 
             {/* Social Login Buttons */}
             <div className="space-y-3">
-              <button className="w-full py-3 px-4 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-xl text-white font-medium transition-all duration-200 flex items-center justify-center gap-3">
+              <button 
+                disabled={isBlocked}
+                className="w-full py-3 px-4 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-xl text-white font-medium transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <div className="w-5 h-5 bg-blue-600 rounded-full" />
                 Continue with Google
               </button>
-              <button className="w-full py-3 px-4 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-xl text-white font-medium transition-all duration-200 flex items-center justify-center gap-3">
+              <button 
+                disabled={isBlocked}
+                className="w-full py-3 px-4 bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-xl text-white font-medium transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <div className="w-5 h-5 bg-blue-500 rounded-full" />
                 Continue with Facebook
               </button>
