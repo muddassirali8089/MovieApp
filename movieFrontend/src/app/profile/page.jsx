@@ -29,6 +29,7 @@ export default function ProfilePage() {
     dateOfBirth: ''
   })
   const [profileImage, setProfileImage] = useState(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null)
   const router = useRouter()
   const { user, refreshUserProfile } = useAuth()
 
@@ -48,6 +49,15 @@ export default function ProfilePage() {
     setLoading(false)
   }, [user, router])
 
+  // Cleanup object URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl)
+      }
+    }
+  }, [imagePreviewUrl])
+
   const handleEdit = () => {
     setIsEditing(true)
   }
@@ -61,11 +71,30 @@ export default function ProfilePage() {
       address: user.address || '',
       dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : ''
     })
+    // Clear image preview and reset profile image
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl)
+      setImagePreviewUrl(null)
+    }
+    setProfileImage(null)
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Validate date of birth is not in the future
+      if (formData.dateOfBirth) {
+        const selectedDate = new Date(formData.dateOfBirth)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // Reset time to start of day for accurate comparison
+        
+        if (selectedDate > today) {
+          toast.error('Date of birth cannot be in the future!')
+          setSaving(false)
+          return
+        }
+      }
+
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name)
       formDataToSend.append('address', formData.address)
@@ -99,10 +128,19 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json()
         console.log('Profile update successful:', data)
-        refreshUserProfile() // Update user in context
+        
+        // Clear the profileImage state and preview URL immediately
+        if (imagePreviewUrl) {
+          URL.revokeObjectURL(imagePreviewUrl)
+          setImagePreviewUrl(null)
+        }
+        setProfileImage(null)
+        
+        // Update user in context
+        await refreshUserProfile()
+        
         toast.success('Profile updated successfully!')
         setIsEditing(false)
-        setProfileImage(null)
       } else {
         const errorData = await response.json()
         console.error('Profile update failed:', errorData)
@@ -119,7 +157,15 @@ export default function ProfilePage() {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
+      // Cleanup previous preview URL
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl)
+      }
+      
       setProfileImage(file)
+      // Create new preview URL
+      const newPreviewUrl = URL.createObjectURL(file)
+      setImagePreviewUrl(newPreviewUrl)
     }
   }
 
@@ -174,7 +220,7 @@ export default function ProfilePage() {
             <div className="relative">
               <div className="w-32 h-32 rounded-full overflow-hidden bg-dark-700 border-4 border-dark-600">
                 <Image
-                  src={user.profileImage || '/placeholder-avatar.jpg'}
+                  src={imagePreviewUrl || (user.profileImage || '/placeholder-avatar.jpg')}
                   alt={user.name}
                   width={128}
                   height={128}
@@ -193,7 +239,23 @@ export default function ProfilePage() {
                   />
                 </label>
               )}
+              
+              {/* Show preview indicator */}
+              {profileImage && (
+                <div className="absolute top-0 right-0 bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
+                  Preview
+                </div>
+              )}
             </div>
+            
+            {/* Show selected image filename */}
+            {profileImage && (
+              <div className="text-center mt-2">
+                <p className="text-xs text-primary-400 font-medium">
+                  Selected: {profileImage.name}
+                </p>
+              </div>
+            )}
 
             {/* Profile Info */}
             <div className="flex-1 text-center lg:text-left">
@@ -269,6 +331,19 @@ export default function ProfilePage() {
           >
             <h2 className="text-2xl font-bold text-white mb-6">Edit Profile Information</h2>
             
+            {/* Image Selection Info */}
+            {profileImage && (
+              <div className="mb-6 p-4 bg-primary-500/10 border border-primary-500/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Camera className="w-5 h-5 text-primary-400" />
+                  <div>
+                    <p className="text-primary-400 font-medium">New Profile Image Selected</p>
+                    <p className="text-sm text-primary-300">{profileImage.name}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
@@ -318,8 +393,10 @@ export default function ProfilePage() {
                   type="date"
                   value={formData.dateOfBirth}
                   onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
                 />
+                <p className="text-xs text-dark-400 mt-1">Date cannot be in the future</p>
               </div>
             </div>
           </motion.div>

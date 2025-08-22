@@ -21,6 +21,7 @@ const movieSchema = new mongoose.Schema(
     },
     image: {
       type: String, // Cloudinary URL
+      default: "https://res.cloudinary.com/dujmvhjyt/image/upload/v1755821112/movies/ckeretpb1cievueuxvci.jpg",
       required: [true, "Movie must have an image"],
     },
     releaseDate: {
