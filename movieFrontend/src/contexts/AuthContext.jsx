@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
         }
       })
 
-      console.log('Profile response status:', response.status)
+      
 
       if (response.ok) {
         const data = await response.json()
