@@ -74,7 +74,7 @@ export const getMyRatings = catchAsync(async (req, res, next) => {
   const ratings = await Rating.find({ user: userId })
     .populate({
       path: 'movie',
-      select: 'title posterImage genre releaseYear averageRating'
+      select: 'title image description releaseDate averageRating category'
     })
     .sort({ createdAt: -1 }) // Most recent first
     .select('-__v');

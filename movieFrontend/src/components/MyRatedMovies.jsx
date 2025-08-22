@@ -11,6 +11,7 @@ export default function MyRatedMovies() {
   const [ratedMovies, setRatedMovies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [ratingLimit, setRatingLimit] = useState(5) // Default: show 5 ratings
   const { user } = useAuth()
 
   useEffect(() => {
@@ -49,6 +50,16 @@ export default function MyRatedMovies() {
       setLoading(false)
     }
   }
+
+  // Get displayed ratings based on limit
+  const getDisplayedRatings = () => {
+    if (ratingLimit === 'all') {
+      return ratedMovies
+    }
+    return ratedMovies.slice(0, ratingLimit)
+  }
+
+  const displayedRatings = getDisplayedRatings()
 
   if (loading) {
     return (
@@ -108,14 +119,30 @@ export default function MyRatedMovies() {
 
   return (
     <div className="bg-dark-800 rounded-xl p-6 border border-dark-700">
-      <div className="flex items-center gap-3 mb-6">
-        <Star className="w-6 h-6 text-yellow-400" />
-        <h2 className="text-2xl font-bold text-white">My Rated Movies</h2>
-        <span className="text-dark-300 text-sm">({ratedMovies.length})</span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Star className="w-6 h-6 text-yellow-400" />
+          <h2 className="text-2xl font-bold text-white">My Rated Movies</h2>
+          <span className="text-dark-300 text-sm">({ratedMovies.length})</span>
+        </div>
+        
+        {/* Rating Limit Selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-dark-300">Show:</span>
+          <select
+            value={ratingLimit}
+            onChange={(e) => setRatingLimit(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            className="px-3 py-1 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value={5}>5 ratings</option>
+            <option value={10}>10 ratings</option>
+            <option value="all">All ratings</option>
+          </select>
+        </div>
       </div>
 
       <div className="space-y-4">
-        {ratedMovies.map((rating) => (
+        {displayedRatings.map((rating) => (
           <motion.div
             key={rating._id}
             className="flex gap-4 p-4 bg-dark-700 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors"
@@ -127,7 +154,7 @@ export default function MyRatedMovies() {
             <Link href={`/movie/${rating.movie._id}`} className="flex-shrink-0">
               <div className="w-20 h-28 rounded-lg overflow-hidden bg-dark-600">
                 <Image
-                  src={rating.movie.posterImage || '/placeholder-movie.jpg'}
+                  src={rating.movie.image || '/placeholder-movie.jpg'}
                   alt={rating.movie.title}
                   width={80}
                   height={112}
@@ -167,20 +194,27 @@ export default function MyRatedMovies() {
 
               {/* Movie Details */}
               <div className="flex items-center gap-4 text-sm text-dark-300 mb-2">
-                {rating.movie.releaseYear && (
+                {rating.movie.releaseDate && (
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    <span>{rating.movie.releaseYear}</span>
+                    <span>{new Date(rating.movie.releaseDate).getFullYear()}</span>
                   </div>
                 )}
                 
-                {rating.movie.genre && (
+                {rating.movie.category && (
                   <div className="flex items-center gap-1">
                     <Tag className="w-3 h-3" />
-                    <span>{rating.movie.genre}</span>
+                    <span>{rating.movie.category}</span>
                   </div>
                 )}
               </div>
+
+              {/* Movie Description */}
+              {rating.movie.description && (
+                <p className="text-sm text-dark-300 mb-2 line-clamp-2">
+                  {rating.movie.description}
+                </p>
+              )}
 
               {/* Movie Rating Info */}
               <div className="flex items-center gap-4 text-xs text-dark-400">
@@ -193,6 +227,13 @@ export default function MyRatedMovies() {
           </motion.div>
         ))}
       </div>
+
+      {/* Display Info */}
+      {ratingLimit !== 'all' && ratedMovies.length > ratingLimit && (
+        <div className="mt-4 text-center text-sm text-dark-400">
+          Showing {displayedRatings.length} of {ratedMovies.length} rated movies
+        </div>
+      )}
 
       {/* View All Movies Link */}
       <div className="mt-6 text-center">
