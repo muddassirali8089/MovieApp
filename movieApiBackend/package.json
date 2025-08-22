@@ -23,13 +23,15 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mongo-sanitize": "^1.1.0",
     "mongoose": "^8.17.2",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "node-fetch": "^3.3.2",
     "nodemon": "^3.1.10",
-    "streamifier": "^0.1.1"
+    "streamifier": "^0.1.1",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
     "cross-env": "^10.0.0"
