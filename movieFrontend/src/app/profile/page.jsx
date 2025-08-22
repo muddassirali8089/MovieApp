@@ -13,10 +13,13 @@ import {
   Edit3, 
   Save, 
   X, 
-  Camera
+  Camera,
+  Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import MyRatedMovies from '@/components/MyRatedMovies'
+import RecommendationsPreview from '@/components/RecommendationsPreview'
+import Link from 'next/link'
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
@@ -411,6 +414,34 @@ export default function ProfilePage() {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <MyRatedMovies />
+        </motion.div>
+
+        {/* Recommendations Section */}
+        <motion.div 
+          id="recommendations"
+          className="mt-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <div className="bg-dark-800 rounded-2xl p-8 border border-dark-700">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Your Recommendations</h2>
+                  <p className="text-dark-300">Movies tailored just for you</p>
+                </div>
+              </div>
+              <Link href="/recommendations" className="btn-primary">
+                View All
+              </Link>
+            </div>
+            
+            <RecommendationsPreview />
+          </div>
         </motion.div>
 
       </div>

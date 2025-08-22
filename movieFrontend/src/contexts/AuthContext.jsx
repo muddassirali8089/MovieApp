@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   const fetchUserProfile = async (token) => {
+    console.log('Fetching user profile with token:', token ? 'Token exists' : 'No token')
     try {
       const response = await fetch('http://localhost:7000/api/v1/users/me', {
         headers: {
@@ -24,8 +25,11 @@ export const AuthProvider = ({ children }) => {
         }
       })
 
+      console.log('Profile response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log('Profile data received:', data)
         if (data.data && data.data.user) {
           setUser({
             name: data.data.user.name || 'User',
@@ -34,8 +38,10 @@ export const AuthProvider = ({ children }) => {
             dateOfBirth: data.data.user.dateOfBirth,
             profileImage: data.data.user.profileImage
           })
+          console.log('User state updated')
         }
       } else {
+        console.log('Profile fetch failed, removing token')
         // If token is invalid, remove it
         localStorage.removeItem('auth_token')
         setUser(null)
@@ -47,11 +53,14 @@ export const AuthProvider = ({ children }) => {
       setUser(null)
     } finally {
       setLoading(false)
+      console.log('Profile fetch completed, loading set to false')
     }
   }
 
   const login = (token) => {
+    console.log('Login called with token:', token ? 'Token exists' : 'No token')
     localStorage.setItem('auth_token', token)
+    console.log('Token stored in localStorage')
     fetchUserProfile(token)
   }
 
@@ -79,12 +88,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
+  // Debug logging
+  useEffect(() => {
+    console.log('AuthContext state:', { user, loading, isAuthenticated: !!user })
+  }, [user, loading])
+
   const value = {
     user,
     loading,
     login,
     logout,
-    refreshUserProfile
+    refreshUserProfile,
+    isAuthenticated: !!user
   }
 
   return (

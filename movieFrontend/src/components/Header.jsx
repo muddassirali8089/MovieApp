@@ -13,7 +13,8 @@ import {
   Settings, 
   Star,
   Home,
-  Film
+  Film,
+  Sparkles
 } from 'lucide-react'
 
 export default function Header() {
@@ -91,6 +92,12 @@ export default function Header() {
             <Link href="/categories" className="text-white hover:text-primary-400 transition-colors">
               Categories
             </Link>
+            {user && (
+              <Link href="/recommendations" className="text-white hover:text-primary-400 transition-colors flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Recommendations
+              </Link>
+            )}
           </nav>
 
           {/* Right Side */}
@@ -145,6 +152,12 @@ export default function Header() {
                           <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Profile
+                          </button>
+                        </Link>
+                        <Link href="/recommendations" onClick={closeUserMenu}>
+                          <button className="w-full px-4 py-2 text-left text-sm text-dark-300 hover:text-white hover:bg-dark-700 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            Recommendations
                           </button>
                         </Link>
                         <Link href="/my-ratings" onClick={closeUserMenu}>
@@ -226,6 +239,10 @@ export default function Header() {
               </Link>
               {user ? (
                 <>
+                  <Link href="/recommendations" className="text-white hover:text-primary-400 transition-colors py-2 flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                    <Sparkles className="w-4 h-4" />
+                    Recommendations
+                  </Link>
                   <Link href="/profile" className="text-white hover:text-primary-400 transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
                     Profile
                   </Link>
