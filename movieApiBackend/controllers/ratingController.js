@@ -90,6 +90,9 @@ export const getMyRatings = catchAsync(async (req, res, next) => {
 // @route  GET /api/v1/movies/:id/my-rating
 // @access Private
 export const getMyRating = catchAsync(async (req, res, next) => {
+
+  console.log("my ratings call sure called");
+  
   const movieId = req.params.id;
   const userId = req.user._id;
 

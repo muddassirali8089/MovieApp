@@ -1,4 +1,4 @@
-# Movie App API Documentation
+# Movie API Documentation
 
 ## Base URL
 ```
@@ -6,182 +6,140 @@ http://localhost:7000/api/v1
 ```
 
 ## Authentication
-Most endpoints require authentication using JWT tokens. Include the token in the Authorization header:
+All protected routes require a valid JWT token in the Authorization header:
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <your-jwt-token>
 ```
 
-## Endpoints
+## User Routes
 
-### 🔐 Authentication
+### POST /users/signup
+Create a new user account
+- **Body**: `{ "name": "string", "email": "string", "password": "string", "confirmPassword": "string" }`
+- **Response**: User data with JWT token
 
-#### 1. User Signup
-- **POST** `/users/signup`
-- **Description**: Create a new user account
-- **Body**:
-  ```json
-  {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "password": "password123",
-    "confirmPassword": "password123",
-    "address": "123 Main St, City"
-  }
-  ```
-- **Response**: JWT token + user data
+### POST /users/login
+Authenticate user and get JWT token
+- **Body**: `{ "email": "string", "password": "string" }`
+- **Response**: User data with JWT token
 
-#### 2. User Login
-- **POST** `/users/login`
-- **Description**: Authenticate user and get JWT token
-- **Body**:
-  ```json
-  {
-    "email": "john@example.com",
-    "password": "password123"
-  }
-  ```
-- **Response**: JWT token + user data
-
-### 👤 User Profile
-
-#### 3. Get User Profile
-- **GET** `/users/me`
-- **Access**: Private (requires JWT)
+### GET /users/profile
+Get current user profile (Protected)
+- **Headers**: Authorization token required
 - **Response**: User profile data
 
-#### 4. Update User Profile
-- **PATCH** `/users/updateProfile`
-- **Access**: Private (requires JWT)
-- **Body**:
-  ```json
-  {
-    "name": "John Smith",
-    "address": "456 Oak Ave, Town",
-    "dateOfBirth": "1990-01-01"
-  }
-  ```
-- **Response**: Updated user data
+## Movie Routes
 
-### 🎬 Movies
-
-#### 5. Get All Movies
-- **GET** `/movies`
-- **Access**: Public
+### GET /movies
+Get all movies with filtering and sorting
 - **Query Parameters**:
-  - `category`: Filter by category name (Action, Horror, Comedy, Animated)
+  - `category`: Filter by category name
   - `search`: Search in title and description
   - `sort`: Sort by "title", "rating", or "date"
-- **Example**: `/movies?category=Action&search=action&sort=rating`
+- **Response**: Array of movies with category information
 
-#### 6. Get Single Movie
-- **GET** `/movies/:id`
-- **Access**: Public
-- **Response**: Movie details with category and ratings
+### GET /movies/:id
+Get single movie by ID
+- **Response**: Movie data with ratings and category
 
-#### 7. Upload New Movie
-- **POST** `/movies`
-- **Access**: Private (requires JWT)
-- **Body**: Form data with `image` file
-  ```
-  title: "Movie Title"
-  description: "Movie description"
-  category: "Action"
-  releaseDate: "2024-01-01"
-  image: [file upload]
-  ```
+### POST /movies
+Upload new movie (Protected)
+- **Headers**: Authorization token required
+- **Body**: Form data with image file
+- **Fields**: title, description, category, releaseDate, image
 
-### 📂 Categories
+### GET /movies/categories
+Get all available categories
+- **Response**: Array of categories
 
-#### 8. Get All Categories
-- **GET** `/movies/categories`
-- **Access**: Public
-- **Response**: List of available categories
+## Movie Recommendation Routes (NEW! 🎯)
 
-### ⭐ Ratings
+### GET /movies/recommendations
+Get personalized movie recommendations based on user ratings (Protected)
+- **Headers**: Authorization token required
+- **Query Parameters**:
+  - `limit`: Number of recommendations (default: 10)
+- **Response**: Personalized movie recommendations with scores
+- **Method**: Content-based filtering using user's high-rated movies
 
-#### 9. Rate a Movie
-- **POST** `/movies/:id/rate`
-- **Access**: Private (requires JWT)
-- **Body**:
-  ```json
-  {
-    "rating": 5
-  }
-  ```
-- **Response**: Rating confirmation + updated movie stats
+### GET /movies/recommendations/advanced
+Get advanced recommendations using collaborative filtering (Protected)
+- **Headers**: Authorization token required
+- **Query Parameters**:
+  - `limit`: Number of recommendations (default: 10)
+- **Response**: Recommendations based on similar users' preferences
+- **Method**: Collaborative filtering with user similarity scoring
 
-#### 10. Get My Rating
-- **GET** `/movies/:id/my-rating`
-- **Access**: Private (requires JWT)
-- **Response**: User's rating for the movie
+### GET /movies/recommendations/category
+Get category-based recommendations (Protected)
+- **Headers**: Authorization token required
+- **Query Parameters**:
+  - `limit`: Number of recommendations (default: 10)
+- **Response**: Recommendations focusing on under-explored categories
+- **Method**: Category analysis with diversity promotion
 
-#### 11. Get Movie Ratings
-- **GET** `/movies/:id/ratings`
-- **Access**: Public
-- **Response**: All ratings for the movie
+### GET /movies/recommendations/comprehensive
+Get comprehensive recommendations combining all methods (Protected)
+- **Headers**: Authorization token required
+- **Query Parameters**:
+  - `limit`: Number of recommendations (default: 15)
+- **Response**: Best recommendations from all three methods combined
+- **Method**: Hybrid approach with deduplication and scoring
 
-## Data Models
+## Rating Routes
 
-### User
-```json
-{
-  "_id": "user_id",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "address": "123 Main St",
-  "profileImage": "cloudinary_url",
-  "dateOfBirth": "1990-01-01T00:00:00.000Z",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
+### POST /movies/:id/rate
+Rate a movie (Protected)
+- **Headers**: Authorization token required
+- **Body**: `{ "rating": number(1-5) }`
+- **Response**: Rating confirmation
 
-### Movie
-```json
-{
-  "_id": "movie_id",
-  "title": "Movie Title",
-  "description": "Movie description",
-  "category": "category_id",
-  "image": "cloudinary_url",
-  "releaseDate": "2024-01-01T00:00:00.000Z",
-  "ratings": [
-    {
-      "user": "user_id",
-      "rating": 5
-    }
-  ],
-  "averageRating": 4.5,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
+### GET /movies/:id/ratings
+Get all ratings for a movie
+- **Response**: Array of ratings with user information
 
-### Category
-```json
-{
-  "_id": "category_id",
-  "name": "Action",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
+### GET /movies/:id/my-rating
+Get current user's rating for a movie (Protected)
+- **Headers**: Authorization token required
+- **Response**: User's rating data
 
-### Rating
-```json
-{
-  "_id": "rating_id",
-  "user": "user_id",
-  "movie": "movie_id",
-  "rating": 5,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
+## Recommendation Algorithm Details
 
-## Error Handling
+### 1. Basic Recommendations (`/recommendations`)
+- Analyzes user's high-rated movies (4-5 stars)
+- Finds movies in similar categories
+- Calculates recommendation score based on:
+  - 60% weight to average rating
+  - 30% bonus for high ratings (4+ stars)
+  - 10% bonus for number of ratings
 
-All errors follow this format:
+### 2. Advanced Recommendations (`/recommendations/advanced`)
+- Finds users with similar rating patterns
+- Calculates user similarity using rating correlation
+- Recommends movies that similar users rated highly
+- Scoring considers:
+  - 50% weight to similar users' average rating
+  - 30% weight to number of similar users who rated
+  - 20% weight to overall movie rating
+
+### 3. Category-Based Recommendations (`/recommendations/category`)
+- Analyzes user's category preferences
+- Identifies under-explored categories
+- Promotes diversity in recommendations
+- Scoring considers:
+  - 70% weight to average rating
+  - 10% weight to number of ratings
+  - 20% bonus for high-rated movies
+
+### 4. Comprehensive Recommendations (`/recommendations/comprehensive`)
+- Combines all three methods
+- Deduplicates results
+- Provides method statistics
+- Fallback to basic method if others fail
+
+## Error Responses
+
+All endpoints return consistent error format:
 ```json
 {
   "status": "error",
@@ -190,85 +148,31 @@ All errors follow this format:
 }
 ```
 
-## Common HTTP Status Codes
+## Success Responses
 
-- **200**: Success
-- **201**: Created
-- **400**: Bad Request
-- **401**: Unauthorized
-- **404**: Not Found
-- **500**: Internal Server Error
-
-## Usage Examples
-
-### 1. Search for Action movies with "action" in title
-```
-GET /movies?category=Action&search=action
-```
-
-### 2. Get movies sorted by rating
-```
-GET /movies?sort=rating
-```
-
-### 3. Rate a movie (requires authentication)
-```
-POST /movies/movie_id/rate
-Authorization: Bearer your_jwt_token
-Content-Type: application/json
-
+All endpoints return consistent success format:
+```json
 {
-  "rating": 5
+  "status": "success",
+  "results": 10,
+  "data": { ... }
 }
 ```
 
-## Setup Instructions
+## Rate Limiting
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+- General endpoints: 100 requests per 15 minutes
+- Login/Signup: 5 requests per 15 minutes
 
-2. **Set up environment variables** in `.env`:
-   ```
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   CLOUDINARY_CLOUD_NAME=your_cloudinary_name
-   CLOUDINARY_API_KEY=your_cloudinary_key
-   CLOUDINARY_API_SECRET=your_cloudinary_secret
-   ```
+## Testing
 
-3. **Seed the database**:
-   ```bash
-   node dev-data/seed.js
-   ```
+Use the provided `test-recommendations.js` file to test the recommendation APIs:
+```bash
+node test-recommendations.js
+```
 
-4. **Start the server**:
-   ```bash
-   npm start
-   ```
-
-## Features Implemented
-
-✅ User authentication (signup/login)  
-✅ JWT token-based authorization  
-✅ User profile management  
-✅ Movie CRUD operations  
-✅ Category management  
-✅ Movie rating system (1-5 scale)  
-✅ Search and filtering  
-✅ Image upload to Cloudinary  
-✅ MongoDB integration  
-✅ Comprehensive error handling  
-✅ Input validation  
-✅ Rate limiting (configured but commented)  
-
-## Next Steps for Frontend Integration
-
-1. Implement user registration/login forms
-2. Create movie browsing interface with filters
-3. Add movie rating functionality
-4. Build user profile management
-5. Implement movie upload for admins
-6. Add search functionality
-7. Create responsive design for mobile/desktop
+Make sure to:
+1. Start your backend server
+2. Create a test user account
+3. Rate some movies to generate recommendation data
+4. Update the test credentials in the file
