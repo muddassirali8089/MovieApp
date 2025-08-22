@@ -71,3 +71,72 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-dark-500;
 }
+
+/* Custom media query to hide MovieZone text between 100px and 500px */
+@media screen and (min-width: 100px) and (max-width: 500px) {
+  .hide-moviezone-text {
+    display: none !important;
+  }
+}
+
+/* Alternative responsive approach using Tailwind-like breakpoints */
+@media screen and (min-width: 100px) and (max-width: 500px) {
+  .logo-text-responsive {
+    display: none !important;
+  }
+}
+
+/* For even more precise control with smooth transitions */
+@media screen and (min-width: 100px) and (max-width: 500px) {
+  .header-logo-text {
+    opacity: 0;
+    visibility: hidden;
+    width: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+  }
+}
+
+/* Smooth transitions for logo text */
+.logo-text-smooth {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Enhanced responsive behavior */
+@media screen and (min-width: 100px) and (max-width: 500px) {
+  .logo-text-smooth {
+    opacity: 0;
+    transform: translateX(-10px);
+    width: 0;
+    margin-left: 0;
+    overflow: hidden;
+  }
+}
+
+@media screen and (max-width: 99px), screen and (min-width: 501px) {
+  .logo-text-smooth {
+    opacity: 1;
+    transform: translateX(0);
+    width: auto;
+    margin-left: 0.5rem; /* 2px gap */
+    overflow: visible;
+  }
+}
+
+/*
+  RESPONSIVE LOGO TEXT CLASSES:
+  
+  Use these classes to control MovieZone text visibility:
+  
+  1. .hide-moviezone-text - Simple hide (recommended)
+  2. .logo-text-responsive - Alternative approach
+  3. .header-logo-text - Advanced control with smooth transitions
+  
+  Screen widths:
+  - 0-99px: MovieZone text visible
+  - 100-500px: MovieZone text hidden
+  - 501px+: MovieZone text visible again
+  
+  Usage in JSX:
+  <span className="text-xl font-bold gradient-text hide-moviezone-text">MovieZone</span>
+*/

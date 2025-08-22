@@ -7,7 +7,7 @@ import Category from "../models/category.model.js";
 import Rating from "../models/rating.model.js";
 import mongoose from "mongoose";
 
-// Cloudinary is configured centrally in utils/cloudinary.js
+
 
 export const uploadMovie = catchAsync(async (req, res, next) => {
   const { title, description, category, releaseDate } = req.body;
@@ -110,9 +110,7 @@ export const getMovies = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc   Get single movie by ID
-// @route  GET /api/v1/movies/:id
-// @access Public
+
 export const getMovie = catchAsync(async (req, res, next) => {
   const movie = await Movie.findById(req.params.id)
     .populate("category", "name")
@@ -128,9 +126,7 @@ export const getMovie = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc   Get movie recommendations based on user ratings
-// @route  GET /api/v1/movies/recommendations
-// @access Private (login required)
+
 export const getMovieRecommendations = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const limit = parseInt(req.query.limit) || 10;
@@ -368,24 +364,11 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc   Get advanced movie recommendations using collaborative filtering
-// @route  GET /api/v1/movies/recommendations/advanced
-// @access Private (login required)
 
 
-// @desc   Get category-based movie recommendations
-// @route  GET /api/v1/movies/recommendations/category
-// @access Private (login required)
 
 
-// @desc   Get comprehensive movie recommendations combining all methods
-// @route  GET /api/v1/movies/recommendations/comprehensive
-// @access Private (login required)
 
 
-// Helper function to get recommendations from specific method
-
-
-// Helper fu
 
 

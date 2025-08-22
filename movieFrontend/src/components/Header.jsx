@@ -78,7 +78,7 @@ export default function Header() {
             >
               <Film className="w-5 h-5 text-white" />
             </motion.div>
-            <span className="text-xl font-bold gradient-text">MovieZone</span>
+            <span className="text-xl font-bold gradient-text logo-text-smooth">MovieZone</span>
           </Link>
 
           {/* Desktop Navigation */}
