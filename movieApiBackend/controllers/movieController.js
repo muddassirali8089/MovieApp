@@ -151,7 +151,7 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
       {
         $match: { 
           _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
-          averageRating: { $gte: 3.5 } 
+          averageRating: { $gte: 3.5 } // Only movies with decent ratings
         }
       },
       {
@@ -163,7 +163,31 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
         }
       },
       {
-        $unwind: '$categoryInfo'
+        $addFields: {
+          categoryName: {
+            $cond: {
+              if: { $gt: [{ $size: '$categoryInfo' }, 0] },
+              then: { $arrayElemAt: ['$categoryInfo.name', 0] },
+              else: 'Unknown Category'
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          recommendationScore: {
+            $add: [
+              '$averageRating',
+              { $cond: [{ $gte: [{ $size: '$ratings' }, 3] }, 0.5, 0] } // Bonus for movies with 3+ ratings
+            ]
+          }
+        }
+      },
+      {
+        $match: {
+          // Filter out movies with very low recommendation scores
+          recommendationScore: { $gte: 3.5 }
+        }
       },
       {
         $project: {
@@ -173,8 +197,8 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
           image: 1,
           averageRating: 1,
           releaseDate: 1,
-          category: '$categoryInfo.name',
-          recommendationScore: '$averageRating'
+          category: '$categoryName',
+          recommendationScore: { $round: ['$recommendationScore', 2] }
         }
       },
       {
@@ -213,7 +237,15 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
       }
     },
     {
-      $unwind: '$categoryInfo'
+      $addFields: {
+        categoryName: {
+          $cond: {
+            if: { $gt: [{ $size: '$categoryInfo' }, 0] },
+            then: { $arrayElemAt: ['$categoryInfo.name', 0] },
+            else: 'Unknown Category'
+          }
+        }
+      }
     },
     {
       $addFields: {
@@ -228,6 +260,12 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
       }
     },
     {
+      $match: {
+        // Filter out movies with 0 or very low recommendation scores
+        recommendationScore: { $gt: 0.1 }
+      }
+    },
+    {
       $project: {
         _id: 1,
         title: 1,
@@ -235,7 +273,7 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
         image: 1,
         averageRating: 1,
         releaseDate: 1,
-        category: '$categoryInfo.name',
+        category: '$categoryName',
         recommendationScore: { $round: ['$recommendationScore', 2] }
       }
     },
@@ -253,7 +291,8 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
       {
         $match: {
           _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
-          category: { $nin: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) } // Different categories
+          category: { $nin: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) }, // Different categories
+          averageRating: { $gte: 3.0 } // Minimum rating threshold for additional movies
         }
       },
       {
@@ -265,11 +304,26 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
         }
       },
       {
-        $unwind: '$categoryInfo'
+        $addFields: {
+          categoryName: {
+            $cond: {
+              if: { $gt: [{ $size: '$categoryInfo' }, 0] },
+              then: { $arrayElemAt: ['$categoryInfo.name', 0] },
+              else: 'Unknown Category'
+            }
+          },
+          recommendationScore: {
+            $add: [
+              '$averageRating',
+              { $cond: [{ $gte: [{ $size: '$ratings' }, 2] }, 0.3, 0] } // Bonus for movies with 2+ ratings
+            ]
+          }
+        }
       },
       {
-        $addFields: {
-          recommendationScore: '$averageRating'
+        $match: {
+          // Filter out movies with very low recommendation scores
+          recommendationScore: { $gte: 3.0 }
         }
       },
       {
@@ -280,7 +334,7 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
           image: 1,
           averageRating: 1,
           releaseDate: 1,
-          category: '$categoryInfo.name',
+          category: '$categoryName',
           recommendationScore: { $round: ['$recommendationScore', 2] }
         }
       },
@@ -295,588 +349,43 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
     recommendations.push(...additionalMovies);
   }
 
+  // Final quality check: Filter out any movies with 0 or very low recommendation scores
+  const highQualityRecommendations = recommendations.filter(movie => 
+    movie.recommendationScore > 0.1
+  );
+
+  // Debug logging to check category data
+  console.log('Recommendations sample:', highQualityRecommendations.slice(0, 2).map(m => ({
+    title: m.title,
+    category: m.category,
+    categoryInfo: m.categoryInfo
+  })));
+
   res.status(200).json({
     status: "success",
-    results: recommendations.length,
-    data: { recommendations }
+    results: highQualityRecommendations.length,
+    data: { recommendations: highQualityRecommendations }
   });
 });
 
 // @desc   Get advanced movie recommendations using collaborative filtering
 // @route  GET /api/v1/movies/recommendations/advanced
 // @access Private (login required)
-export const getAdvancedRecommendations = catchAsync(async (req, res, next) => {
-  const userId = req.user.id;
-  const limit = parseInt(req.query.limit) || 10;
 
-  // Step 1: Find users with similar rating patterns
-  const userRatings = await Rating.find({ user: userId });
-  
-  if (userRatings.length === 0) {
-    return res.status(200).json({
-      status: "success",
-      message: "No ratings found. Please rate some movies first.",
-      results: 0,
-      data: { recommendations: [] }
-    });
-  }
-
-  // Step 2: Find similar users based on rating correlation
-  const similarUsers = await Rating.aggregate([
-    {
-      $match: {
-        user: { $ne: new mongoose.Types.ObjectId(userId) },
-        movie: { $in: userRatings.map(r => r.movie) }
-      }
-    },
-    {
-      $group: {
-        _id: "$user",
-        commonMovies: { $push: "$movie" },
-        ratings: { $push: { movie: "$movie", rating: "$rating" } }
-      }
-    },
-    {
-      $addFields: {
-        similarityScore: {
-          $reduce: {
-            input: "$commonMovies",
-            initialValue: 0,
-            in: {
-              $add: [
-                "$$value",
-                {
-                  $abs: {
-                    $subtract: [
-                      { $arrayElemAt: [{ $map: { input: "$ratings", as: "r", in: "$$r.rating" } }, { $indexOfArray: ["$commonMovies", "$$this"] }] },
-                      { $arrayElemAt: [{ $map: { input: userRatings.map(r => r.rating), in: "$$this" } }, { $indexOfArray: [userRatings.map(r => r.movie), "$$this"] }] }
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    {
-      $sort: { similarityScore: 1 } // Lower score = more similar
-    },
-    {
-      $limit: 5 // Top 5 similar users
-    }
-  ]);
-
-  if (similarUsers.length === 0) {
-    // Fallback to basic recommendations
-    return getMovieRecommendations(req, res, next);
-  }
-
-  // Step 3: Get movies that similar users rated highly but current user hasn't rated
-  const userRatedMovieIds = userRatings.map(r => r.movie.toString());
-  const similarUserIds = similarUsers.map(u => u._id);
-
-  const recommendations = await Rating.aggregate([
-    {
-      $match: {
-        user: { $in: similarUserIds },
-        rating: { $gte: 4 },
-        movie: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) }
-      }
-    },
-    {
-      $group: {
-        _id: "$movie",
-        totalRating: { $sum: "$rating" },
-        userCount: { $sum: 1 },
-        avgRating: { $avg: "$rating" }
-      }
-    },
-    {
-      $lookup: {
-        from: 'movies',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'movieInfo'
-      }
-    },
-    {
-      $unwind: '$movieInfo'
-    },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'movieInfo.category',
-        foreignField: '_id',
-        as: 'categoryInfo'
-      }
-    },
-    {
-      $unwind: '$categoryInfo'
-    },
-    {
-      $addFields: {
-        recommendationScore: {
-          $add: [
-            { $multiply: ['$avgRating', 0.5] },
-            { $multiply: ['$userCount', 0.3] },
-            { $multiply: ['$movieInfo.averageRating', 0.2] }
-          ]
-        }
-      }
-    },
-    {
-      $project: {
-        _id: '$movieInfo._id',
-        title: '$movieInfo.title',
-        description: '$movieInfo.description',
-        image: '$movieInfo.image',
-        averageRating: '$movieInfo.averageRating',
-        releaseDate: '$movieInfo.releaseDate',
-        category: '$categoryInfo.name',
-        recommendationScore: { $round: ['$recommendationScore', 2] },
-        similarUsersRated: '$userCount'
-      }
-    },
-    {
-      $sort: { recommendationScore: -1 }
-    },
-    {
-      $limit: limit
-    }
-  ]);
-
-  res.status(200).json({
-    status: "success",
-    results: recommendations.length,
-    data: { 
-      recommendations,
-      similarUsersFound: similarUsers.length,
-      method: "collaborative-filtering"
-    }
-  });
-});
 
 // @desc   Get category-based movie recommendations
 // @route  GET /api/v1/movies/recommendations/category
 // @access Private (login required)
-export const getCategoryBasedRecommendations = catchAsync(async (req, res, next) => {
-  const userId = req.user.id;
-  const limit = parseInt(req.query.limit) || 10;
 
-  // Step 1: Get user's rating history by category
-  const userRatings = await Rating.find({ user: userId }).populate({
-    path: 'movie',
-    populate: { path: 'category', select: 'name' }
-  });
-
-  if (userRatings.length === 0) {
-    return res.status(200).json({
-      status: "success",
-      message: "No ratings found. Please rate some movies first.",
-      results: 0,
-      data: { recommendations: [] }
-    });
-  }
-
-  // Step 2: Analyze user's category preferences
-  const categoryStats = {};
-  userRatings.forEach(rating => {
-    const categoryName = rating.movie.category.name;
-    if (!categoryStats[categoryName]) {
-      categoryStats[categoryName] = { totalRating: 0, count: 0, avgRating: 0 };
-    }
-    categoryStats[categoryName].totalRating += rating.rating;
-    categoryStats[categoryName].count += 1;
-  });
-
-  // Calculate average ratings per category
-  Object.keys(categoryStats).forEach(category => {
-    categoryStats[category].avgRating = categoryStats[category].totalRating / categoryStats[category].count;
-  });
-
-  // Step 3: Find under-explored categories (low count or low rating)
-  const underExploredCategories = Object.keys(categoryStats).filter(category => 
-    categoryStats[category].count < 3 || categoryStats[category].avgRating < 3
-  );
-
-  // Step 4: Get recommendations from under-explored categories
-  let recommendations = [];
-  
-  if (underExploredCategories.length > 0) {
-    const categoryIds = await Category.find({ 
-      name: { $in: underExploredCategories } 
-    }).select('_id');
-
-    recommendations = await Movie.aggregate([
-      {
-        $match: {
-          category: { $in: categoryIds.map(c => c._id) },
-          _id: { $nin: userRatings.map(r => r.movie._id) }
-        }
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      {
-        $unwind: '$categoryInfo'
-      },
-      {
-        $addFields: {
-          recommendationScore: {
-            $add: [
-              { $multiply: ['$averageRating', 0.7] },
-              { $multiply: [{ $size: '$ratings' }, 0.1] },
-              { $multiply: [{ $cond: [{ $gte: ['$averageRating', 4] }, 0.2, 0] }, 0.2] }
-            ]
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          image: 1,
-          averageRating: 1,
-          releaseDate: 1,
-          category: '$categoryInfo.name',
-          recommendationScore: { $round: ['$recommendationScore', 2] },
-          reason: 'Under-explored category'
-        }
-      },
-      {
-        $sort: { recommendationScore: -1 }
-      },
-      {
-        $limit: Math.ceil(limit / 2)
-      }
-    ]);
-  }
-
-  // Step 5: Fill remaining slots with diverse category recommendations
-  const remainingSlots = limit - recommendations.length;
-  if (remainingSlots > 0) {
-    const allCategories = await Category.find().select('_id name');
-    const diverseRecommendations = await Movie.aggregate([
-      {
-        $match: {
-          _id: { $nin: [...userRatings.map(r => r.movie._id), ...recommendations.map(r => r._id)] },
-          averageRating: { $gte: 3.5 }
-        }
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      {
-        $unwind: '$categoryInfo'
-      },
-      {
-        $addFields: {
-          recommendationScore: '$averageRating'
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          image: 1,
-          averageRating: 1,
-          releaseDate: 1,
-          category: '$categoryInfo.name',
-          recommendationScore: { $round: ['$recommendationScore', 2] },
-          reason: 'Diverse recommendation'
-        }
-      },
-      {
-        $sort: { recommendationScore: -1 }
-      },
-      {
-        $limit: remainingSlots
-      }
-    ]);
-
-    recommendations.push(...diverseRecommendations);
-  }
-
-  res.status(200).json({
-    status: "success",
-    results: recommendations.length,
-    data: { 
-      recommendations,
-      categoryAnalysis: categoryStats,
-      underExploredCategories,
-      method: "category-based"
-    }
-  });
-});
 
 // @desc   Get comprehensive movie recommendations combining all methods
 // @route  GET /api/v1/movies/recommendations/comprehensive
 // @access Private (login required)
-export const getComprehensiveRecommendations = catchAsync(async (req, res, next) => {
-  const userId = req.user.id;
-  const limit = parseInt(req.query.limit) || 15;
 
-  try {
-    // Get recommendations from all three methods
-    const [basicRecs, advancedRecs, categoryRecs] = await Promise.all([
-      getRecommendationsFromMethod('basic', userId, Math.ceil(limit / 3)),
-      getRecommendationsFromMethod('advanced', userId, Math.ceil(limit / 3)),
-      getRecommendationsFromMethod('category', userId, Math.ceil(limit / 3))
-    ]);
-
-    // Combine and deduplicate recommendations
-    const allRecommendations = [...basicRecs, ...advancedRecs, ...categoryRecs];
-    const uniqueRecommendations = [];
-    const seenIds = new Set();
-
-    allRecommendations.forEach(rec => {
-      if (!seenIds.has(rec._id.toString())) {
-        seenIds.add(rec._id.toString());
-        uniqueRecommendations.push(rec);
-      }
-    });
-
-    // Sort by recommendation score and limit results
-    const finalRecommendations = uniqueRecommendations
-      .sort((a, b) => (b.recommendationScore || 0) - (a.recommendationScore || 0))
-      .slice(0, limit);
-
-    // Add metadata about each recommendation method
-    const methodStats = {
-      basic: basicRecs.length,
-      advanced: advancedRecs.length,
-      category: categoryRecs.length,
-      total: finalRecommendations.length
-    };
-
-    res.status(200).json({
-      status: "success",
-      results: finalRecommendations.length,
-      data: { 
-        recommendations: finalRecommendations,
-        methodStats,
-        method: "comprehensive-combined"
-      }
-    });
-
-  } catch (error) {
-    // Fallback to basic recommendations if any method fails
-    console.error('Comprehensive recommendations error:', error);
-    return getMovieRecommendations(req, res, next);
-  }
-});
 
 // Helper function to get recommendations from specific method
-async function getRecommendationsFromMethod(method, userId, limit) {
-  try {
-    switch (method) {
-      case 'basic':
-        return await getBasicRecommendations(userId, limit);
-      case 'advanced':
-        return await getAdvancedRecommendationsHelper(userId, limit);
-      case 'category':
-        return await getCategoryRecommendationsHelper(userId, limit);
-      default:
-        return [];
-    }
-  } catch (error) {
-    console.error(`Error getting ${method} recommendations:`, error);
-    return [];
-  }
-}
 
-// Helper function for basic recommendations
-async function getBasicRecommendations(userId, limit) {
-  const userHighRatings = await Rating.find({
-    user: userId,
-    rating: { $gte: 4 }
-  }).populate('movie', 'category');
 
-  if (userHighRatings.length === 0) {
-    return await Movie.aggregate([
-      { $match: { averageRating: { $gte: 3.5 } } },
-      { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-      { $unwind: '$categoryInfo' },
-      { $project: { _id: 1, title: 1, description: 1, image: 1, averageRating: 1, releaseDate: 1, category: '$categoryInfo.name', recommendationScore: '$averageRating' } },
-      { $sort: { recommendationScore: -1 } },
-      { $limit: limit }
-    ]);
-  }
-
-  const userLikedCategories = [...new Set(userHighRatings.map(r => r.movie.category._id.toString()))];
-  const userRatedMovieIds = userHighRatings.map(r => r.movie._id);
-
-  return await Movie.aggregate([
-    { $match: { _id: { $nin: userRatedMovieIds }, category: { $in: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) } } },
-    { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-    { $unwind: '$categoryInfo' },
-    { $addFields: { recommendationScore: { $add: [{ $multiply: ['$averageRating', 0.6] }, { $cond: [{ $gte: ['$averageRating', 4] }, 0.3, 0] }, { $cond: [{ $gte: ['$ratings', { $size: '$ratings' }] }, 0.1, 0] }] } } },
-    { $project: { _id: 1, title: 1, description: 1, image: 1, averageRating: 1, releaseDate: 1, category: '$categoryInfo.name', recommendationScore: { $round: ['$recommendationScore', 2] } } },
-    { $sort: { recommendationScore: -1 } },
-    { $limit: limit }
-  ]);
-}
-
-// Helper function for advanced recommendations
-async function getAdvancedRecommendationsHelper(userId, limit) {
-  const userRatings = await Rating.find({ user: userId });
-  if (userRatings.length === 0) return [];
-
-  // Find similar users based on common movies
-  const similarUsers = await Rating.aggregate([
-    {
-      $match: {
-        user: { $ne: new mongoose.Types.ObjectId(userId) },
-        movie: { $in: userRatings.map(r => r.movie) }
-      }
-    },
-    {
-      $group: {
-        _id: "$user",
-        commonMovies: { $push: "$movie" },
-        ratings: { $push: { movie: "$movie", rating: "$rating" } }
-      }
-    },
-    {
-      $addFields: {
-        similarityScore: {
-          $size: "$commonMovies"
-        }
-      }
-    },
-    {
-      $sort: { similarityScore: -1 }
-    },
-    {
-      $limit: 5
-    }
-  ]);
-
-  if (similarUsers.length === 0) return [];
-
-  const userRatedMovieIds = userRatings.map(r => r.movie.toString());
-  const similarUserIds = similarUsers.map(u => u._id);
-
-  return await Rating.aggregate([
-    {
-      $match: {
-        user: { $in: similarUserIds },
-        rating: { $gte: 4 },
-        movie: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) }
-      }
-    },
-    {
-      $group: {
-        _id: "$movie",
-        totalRating: { $sum: "$rating" },
-        userCount: { $sum: 1 },
-        avgRating: { $avg: "$rating" }
-      }
-    },
-    {
-      $lookup: {
-        from: 'movies',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'movieInfo'
-      }
-    },
-    {
-      $unwind: '$movieInfo'
-    },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'movieInfo.category',
-        foreignField: '_id',
-        as: 'categoryInfo'
-      }
-    },
-    {
-      $unwind: '$categoryInfo'
-    },
-    {
-      $addFields: {
-        recommendationScore: {
-          $add: [
-            { $multiply: ['$avgRating', 0.5] },
-            { $multiply: ['$userCount', 0.3] },
-            { $multiply: ['$movieInfo.averageRating', 0.2] }
-          ]
-        }
-      }
-    },
-    {
-      $project: {
-        _id: '$movieInfo._id',
-        title: '$movieInfo.title',
-        description: '$movieInfo.description',
-        image: '$movieInfo.image',
-        averageRating: '$movieInfo.averageRating',
-        releaseDate: '$movieInfo.releaseDate',
-        category: '$categoryInfo.name',
-        recommendationScore: { $round: ['$recommendationScore', 2] },
-        similarUsersRated: '$userCount'
-      }
-    },
-    {
-      $sort: { recommendationScore: -1 }
-    },
-    {
-      $limit: limit
-    }
-  ]);
-}
-
-// Helper function for category recommendations
-async function getCategoryRecommendationsHelper(userId, limit) {
-  const userRatings = await Rating.find({ user: userId }).populate({ path: 'movie', populate: { path: 'category', select: 'name' } });
-  if (userRatings.length === 0) return [];
-
-  const categoryStats = {};
-  userRatings.forEach(rating => {
-    const categoryName = rating.movie.category.name;
-    if (!categoryStats[categoryName]) {
-      categoryStats[categoryName] = { totalRating: 0, count: 0, avgRating: 0 };
-    }
-    categoryStats[categoryName].totalRating += rating.rating;
-    categoryStats[categoryName].count += 1;
-  });
-
-  Object.keys(categoryStats).forEach(category => {
-    categoryStats[category].avgRating = categoryStats[category].totalRating / categoryStats[category].count;
-  });
-
-  const underExploredCategories = Object.keys(categoryStats).filter(category => 
-    categoryStats[category].count < 3 || categoryStats[category].avgRating < 3
-  );
-
-  if (underExploredCategories.length === 0) return [];
-
-  const categoryIds = await Category.find({ name: { $in: underExploredCategories } }).select('_id');
-
-  return await Movie.aggregate([
-    { $match: { category: { $in: categoryIds.map(c => c._id) }, _id: { $nin: userRatings.map(r => r.movie._id) } } },
-    { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryInfo' } },
-    { $unwind: '$categoryInfo' },
-    { $addFields: { recommendationScore: { $add: [{ $multiply: ['$averageRating', 0.7] }, { $multiply: [{ $size: '$ratings' }, 0.1] }, { $multiply: [{ $cond: [{ $gte: ['$averageRating', 4] }, 0.2, 0] }, 0.2] }] } } },
-    { $project: { _id: 1, title: 1, description: 1, image: 1, averageRating: 1, releaseDate: 1, category: '$categoryInfo.name', recommendationScore: { $round: ['$recommendationScore', 2] }, reason: 'Under-explored category' } },
-    { $sort: { recommendationScore: -1 } },
-    { $limit: limit }
-  ]);
-}
+// Helper fu
 
 

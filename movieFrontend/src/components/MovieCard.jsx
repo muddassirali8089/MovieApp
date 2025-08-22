@@ -9,6 +9,14 @@ import { useState } from 'react'
 export default function MovieCard({ movie }) {
   const [imageError, setImageError] = useState(false)
 
+  // Debug logging for category data
+  console.log('MovieCard category data:', {
+    title: movie.title,
+    category: movie.category,
+    categoryType: typeof movie.category,
+    isObject: typeof movie.category === 'object' && movie.category !== null
+  })
+
   const formatDate = (dateString) => {
     return new Date(dateString).getFullYear()
   }
@@ -85,7 +93,7 @@ export default function MovieCard({ movie }) {
         {/* Category Badge */}
         <div className="absolute top-3 left-3">
           <span className="px-2 py-1 bg-primary-600/90 text-white text-xs font-medium rounded-full backdrop-blur-sm">
-            {movie.category?.name || 'Unknown'}
+            {typeof movie.category === 'string' ? movie.category : movie.category?.name || 'Unknown'}
           </span>
         </div>
       </div>
