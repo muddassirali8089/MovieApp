@@ -36,7 +36,7 @@ app.post("/get-recommendations", async (req, res) => {
       });
     }
 
-    console.log(`🎯 Processing recommendations for user ${userId}`);
+    
 
     // Step 1: Analyze user preferences (movies they rated 4-5 stars)
     const userHighRatings = userRatings.filter(r => r.rating >= 4);
@@ -85,7 +85,7 @@ app.post("/get-recommendations", async (req, res) => {
       movie.recommendationScore > 0.1
     );
 
-    console.log(`✅ Generated ${highQualityRecommendations.length} recommendations for user ${userId}`);
+    
 
     res.json({
       status: "success",
