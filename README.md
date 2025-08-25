@@ -99,7 +99,6 @@ npm run dev
 
 **Recommendation Service will run on:** `http://localhost:5000`
 
-
 ### 6. Service Dependencies
 The recommendation service requires:
 - **Main Backend**: Must be running on port 7000
