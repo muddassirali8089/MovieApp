@@ -141,24 +141,74 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const limit = parseInt(req.query.limit) || 10;
 
-  // Step 1: Get user's rating preferences (movies they rated 4-5 stars)
-  const userHighRatings = await Rating.find({
-    user: userId,
-    rating: { $gte: 4 }
-  }).populate('movie', 'category');
+  try {
+    // Step 1: Get user's ratings
+    const userRatings = await Rating.find({ user: userId }).populate('movie', 'category');
+    
+    // Step 2: Get all movies and categories for the microservice
+    const movies = await Movie.find().populate('category', 'name');
+    const categories = await Category.find();
 
-  // Step 1.5: Get ALL movies user has rated (to exclude them completely)
-  const allUserRatings = await Rating.find({ user: userId });
-  const userRatedMovieIds = allUserRatings.map(r => r.movie);
+    // Step 3: Prepare data for microservice
+    const ratingsForMicroservice = userRatings.map(rating => ({
+      movieId: rating.movie._id.toString(),
+      rating: rating.rating
+    }));
 
-  if (userHighRatings.length === 0) {
-    // If user has no high ratings, return popular movies (excluding rated ones)
+    const moviesForMicroservice = movies.map(movie => ({
+      _id: movie._id.toString(),
+      title: movie.title,
+      description: movie.description,
+      image: movie.image,
+      averageRating: movie.averageRating || 0,
+      releaseDate: movie.releaseDate,
+      category: movie.category._id.toString(),
+      categoryName: movie.category.name,
+      ratings: movie.ratings || []
+    }));
+
+    const categoriesForMicroservice = categories.map(cat => ({
+      _id: cat._id.toString(),
+      name: cat.name
+    }));
+
+    // Step 4: Call the recommendation microservice
+    const recommendationServiceUrl = process.env.RECOMMENDATION_SERVICE_URL || 'http://localhost:5000';
+    
+    console.log(`🔗 Calling recommendation microservice for user ${userId}`);
+    
+    const response = await fetch(`${recommendationServiceUrl}/get-recommendations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        userRatings: ratingsForMicroservice,
+        movies: moviesForMicroservice,
+        categories: categoriesForMicroservice,
+        limit
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const microserviceResponse = await response.json();
+    
+    console.log(`✅ Received recommendations from microservice for user ${userId}`);
+
+    // Step 5: Return the recommendations from microservice
+    res.status(200).json(microserviceResponse);
+
+  } catch (error) {
+    console.error('❌ Error calling recommendation microservice:', error);
+    
+    // Fallback: Return popular movies if microservice fails
     const popularMovies = await Movie.aggregate([
       {
-        $match: { 
-          _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
-          averageRating: { $gte: 3.5 } // Only movies with decent ratings
-        }
+        $match: { averageRating: { $gte: 3.5 } }
       },
       {
         $lookup: {
@@ -180,22 +230,6 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
         }
       },
       {
-        $addFields: {
-          recommendationScore: {
-            $add: [
-              '$averageRating',
-              { $cond: [{ $gte: [{ $size: '$ratings' }, 3] }, 0.5, 0] } // Bonus for movies with 3+ ratings
-            ]
-          }
-        }
-      },
-      {
-        $match: {
-          // Filter out movies with very low recommendation scores
-          recommendationScore: { $gte: 3.5 }
-        }
-      },
-      {
         $project: {
           _id: 1,
           title: 1,
@@ -203,175 +237,24 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
           image: 1,
           averageRating: 1,
           releaseDate: 1,
-          category: '$categoryName',
-          recommendationScore: { $round: ['$recommendationScore', 2] }
+          category: '$categoryName'
         }
       },
       {
-        $sort: { recommendationScore: -1 }
+        $sort: { averageRating: -1 }
       },
       {
         $limit: limit
       }
     ]);
 
-    return res.status(200).json({
+    res.status(200).json({
       status: "success",
-      message: "No personal ratings found. Showing popular movies instead.",
+      message: "Microservice unavailable. Showing popular movies as fallback.",
       results: popularMovies.length,
       data: { recommendations: popularMovies }
     });
   }
-
-  // Step 2: Extract categories and movies the user likes
-  const userLikedCategories = [...new Set(userHighRatings.map(r => r.movie.category._id.toString()))];
-  
-  // Step 3: Find movies in similar categories that user hasn't rated AT ALL
-  const recommendations = await Movie.aggregate([
-    {
-      $match: {
-        _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) }, // Exclude ALL rated movies
-        category: { $in: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) }
-      }
-    },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'categoryInfo'
-      }
-    },
-    {
-      $addFields: {
-        categoryName: {
-          $cond: {
-            if: { $gt: [{ $size: '$categoryInfo' }, 0] },
-            then: { $arrayElemAt: ['$categoryInfo.name', 0] },
-            else: 'Unknown Category'
-          }
-        }
-      }
-    },
-    {
-      $addFields: {
-        // Calculate recommendation score based on multiple factors
-        recommendationScore: {
-          $add: [
-            { $multiply: ['$averageRating', 0.6] }, // 60% weight to rating
-            { $cond: [{ $gte: ['$averageRating', 4] }, 0.3, 0] }, // Bonus for high ratings
-            { $cond: [{ $gte: [{ $size: '$ratings' }, 5] }, 0.1, 0] } // Bonus for movies with 5+ ratings
-          ]
-        }
-      }
-    },
-    {
-      $match: {
-        // Filter out movies with 0 or very low recommendation scores
-        recommendationScore: { $gt: 0.1 }
-      }
-    },
-    {
-      $project: {
-        _id: 1,
-        title: 1,
-        description: 1,
-        image: 1,
-        averageRating: 1,
-        releaseDate: 1,
-        category: '$categoryName',
-        recommendationScore: { $round: ['$recommendationScore', 2] }
-      }
-    },
-    {
-      $sort: { recommendationScore: -1 }
-    },
-    {
-      $limit: limit
-    }
-  ]);
-
-  // Step 4: If we don't have enough recommendations, add some popular movies from other categories
-  if (recommendations.length < limit) {
-    const additionalMovies = await Movie.aggregate([
-      {
-        $match: {
-          _id: { $nin: userRatedMovieIds.map(id => new mongoose.Types.ObjectId(id)) },
-          category: { $nin: userLikedCategories.map(id => new mongoose.Types.ObjectId(id)) }, // Different categories
-          averageRating: { $gte: 3.0 } // Minimum rating threshold for additional movies
-        }
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      {
-        $addFields: {
-          categoryName: {
-            $cond: {
-              if: { $gt: [{ $size: '$categoryInfo' }, 0] },
-              then: { $arrayElemAt: ['$categoryInfo.name', 0] },
-              else: 'Unknown Category'
-            }
-          },
-          recommendationScore: {
-            $add: [
-              '$averageRating',
-              { $cond: [{ $gte: [{ $size: '$ratings' }, 2] }, 0.3, 0] } // Bonus for movies with 2+ ratings
-            ]
-          }
-        }
-      },
-      {
-        $match: {
-          // Filter out movies with very low recommendation scores
-          recommendationScore: { $gte: 3.0 }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          image: 1,
-          averageRating: 1,
-          releaseDate: 1,
-          category: '$categoryName',
-          recommendationScore: { $round: ['$recommendationScore', 2] }
-        }
-      },
-      {
-        $sort: { recommendationScore: -1 }
-      },
-      {
-        $limit: limit - recommendations.length
-      }
-    ]);
-
-    recommendations.push(...additionalMovies);
-  }
-
-  // Final quality check: Filter out any movies with 0 or very low recommendation scores
-  const highQualityRecommendations = recommendations.filter(movie => 
-    movie.recommendationScore > 0.1
-  );
-
-  // Debug logging to check category data
-  console.log('Recommendations sample:', highQualityRecommendations.slice(0, 2).map(m => ({
-    title: m.title,
-    category: m.category,
-    categoryInfo: m.categoryInfo
-  })));
-
-  res.status(200).json({
-    status: "success",
-    results: highQualityRecommendations.length,
-    data: { recommendations: highQualityRecommendations }
-  });
 });
 
 
