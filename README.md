@@ -14,7 +14,8 @@ A complete movie application with user authentication, ratings, recommendations,
 ```
 MovieApp/
 ├── movieFrontend/          # Next.js Frontend
-├── movieApiBackend/        # Node.js Backend
+├── movieApiBackend/
+                     /recommendationService        # Node.js services
 └── README.md
 ```
 
@@ -49,6 +50,9 @@ CLOUDINARY_API_SECRET=your_api_secret
 # Server
 PORT=7000
 NODE_ENV=development
+
+# Recommendation Service
+RECOMMENDATION_SERVICE_URL=http://localhost:5000
 ```
 
 ### 4. Start Backend Server
@@ -59,6 +63,48 @@ npm run dev
 ```
 
 **Backend will run on:** `http://localhost:7000`
+
+## 🎯 Recommendation Service Setup
+
+### 1. Navigate to Recommendation Service
+```bash
+cd movieApiBackend/recommendationService
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Environment Variables (Optional)
+Create a `.env` file in `recommendationService/` directory if you want to customize:
+
+```env
+# Recommendation Service Port (default: 5000)
+RECOMMENDATION_SERVICE_PORT=5000
+
+# Frontend URL for CORS (optional)
+FRONTEND_URL=http://localhost:3000
+
+# Environment
+NODE_ENV=development
+```
+
+### 4. Start Recommendation Service
+```bash
+npm start
+# or
+npm run dev
+```
+
+**Recommendation Service will run on:** `http://localhost:5000`
+
+
+### 6. Service Dependencies
+The recommendation service requires:
+- **Main Backend**: Must be running on port 7000
+- **Database**: MongoDB connection (handled by main backend)
+- **Port 5000**: Available for the microservice
 
 ## 🎨 Frontend Setup
 
@@ -154,6 +200,23 @@ npm start
 npm test
 ```
 
+### Recommendation Service
+```bash
+cd movieApiBackend/recommendationService
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Start production server
+npm start
+
+# Health check
+curl http://localhost:5000/health
+```
+
 ### Frontend
 ```bash
 cd movieFrontend
@@ -238,6 +301,12 @@ After setup, test the app:
 3. Upload a movie
 4. Rate some movies
 5. Check recommendations
+
+**Testing Recommendation Service:**
+1. Ensure recommendation service is running on port 5000
+2. Rate some movies with 4-5 stars
+3. Check recommendations page for personalized suggestions
+4. Verify console logs show recommendation generation
 
 ---
 
