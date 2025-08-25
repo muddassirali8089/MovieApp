@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { MoviesModule } from './movies/movies.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RatingsModule } from './ratings/ratings.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RatingsModule } from './ratings/ratings.module';
     MoviesModule,
     CategoriesModule,
     RatingsModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

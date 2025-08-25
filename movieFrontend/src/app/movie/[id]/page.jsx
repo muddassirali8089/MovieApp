@@ -7,12 +7,14 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Star, Calendar, Clock, Play, Share2 } from 'lucide-react'
 import MovieRating from '@/components/MovieRating'
 import toast from 'react-hot-toast'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function MovieDetailPage() {
   const [movie, setMovie] = useState(null)
   const [loading, setLoading] = useState(true)
   const params = useParams()
   const router = useRouter()
+  const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
     if (params.id) {
@@ -147,6 +149,16 @@ export default function MovieDetailPage() {
           <ArrowLeft className="w-5 h-5" />
           Back
         </motion.button>
+        
+        {/* Authentication Status */}
+        {isAuthenticated && user && (
+          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+            <p className="text-sm text-green-400">
+              Welcome back, <span className="font-semibold text-white">{user.name}</span>! 
+              You're logged in and can rate movies.
+            </p>
+          </div>
+        )}
         
       </div>
 

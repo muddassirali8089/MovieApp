@@ -30,15 +30,24 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json()
         console.log('Profile data received:', data)
-        if (data.data && data.data.user) {
+        // Handle both possible response structures
+        const userData = data.data?.user || data.user || data
+        
+        if (userData && userData._id) {
           setUser({
-            name: data.data.user.name || 'User',
-            email: data.data.user.email || 'user@example.com',
-            address: data.data.user.address,
-            dateOfBirth: data.data.user.dateOfBirth,
-            profileImage: data.data.user.profileImage
+            _id: userData._id,
+            name: userData.name || 'User',
+            email: userData.email || 'user@example.com',
+            address: userData.address,
+            dateOfBirth: userData.dateOfBirth,
+            profileImage: userData.profileImage,
+            createdAt: userData.createdAt,
+            updatedAt: userData.updatedAt
           })
-          console.log('User state updated')
+          console.log('User state updated successfully from profile fetch')
+        } else {
+          console.error('Invalid profile data structure:', data)
+          setUser(null)
         }
       } else {
         console.log('Profile fetch failed, removing token')
@@ -57,10 +66,27 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const login = (token) => {
-    console.log('Login called with token:', token ? 'Token exists' : 'No token')
+  const login = (token, userData) => {
+    console.log('Login called with token and user data:', token ? 'Token exists' : 'No token')
+    
+    // Store token in localStorage
     localStorage.setItem('auth_token', token)
     console.log('Token stored in localStorage')
+    
+    // Set user data immediately from login response
+    if (userData) {
+      setUser({
+        _id: userData._id,
+        name: userData.name || 'User',
+        email: userData.email || 'user@example.com',
+        profileImage: userData.profileImage,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt
+      })
+      console.log('User state updated from login response')
+    }
+    
+    // Also fetch fresh profile data to ensure consistency
     fetchUserProfile(token)
   }
 

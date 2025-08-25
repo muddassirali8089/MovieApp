@@ -8,10 +8,17 @@ import {
   Delete,
   UseGuards,
   Request,
+  BadRequestException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RatingsService } from '../ratings/ratings.service';
 import { AuthService } from '../auth/auth.service';
@@ -31,6 +38,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly ratingsService: RatingsService,
     private readonly authService: AuthService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // Auth routes (moved from auth controller to match Node.js structure)
@@ -65,10 +73,50 @@ export class UsersController {
   @Patch('updateProfile')
   @UseGuards(JwtAuthGuard)
   updateProfile(
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() updateProfileDto: UpdateProfileDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.usersService.update(req.user._id, updateUserDto);
+    return this.usersService.updateProfile(req.user._id, updateProfileDto);
+  }
+
+  @Patch('updateProfileImage')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('profileImage'))
+  async updateProfileImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: RequestWithUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    try {
+      // Upload image to Cloudinary
+      const imageUrl = await this.cloudinaryService.uploadImage(file, 'users');
+      
+      // Update user profile with the new image URL
+      return this.usersService.updateProfileImage(req.user._id, imageUrl);
+    } catch (error) {
+      throw new BadRequestException(`Failed to upload image: ${error.message}`);
+    }
+  }
+
+  @Patch('changePassword')
+  @UseGuards(JwtAuthGuard)
+  changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.usersService.changePassword(req.user._id, changePasswordDto);
+  }
+
+  @Delete('deleteAccount')
+  @UseGuards(JwtAuthGuard)
+  deleteAccount(
+    @Body() body: { password: string },
+    @Request() req: RequestWithUser,
+  ) {
+    return this.usersService.deleteAccount(req.user._id, body.password);
   }
 
   @Get('my-ratings')
@@ -81,11 +129,6 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')

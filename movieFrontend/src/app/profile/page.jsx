@@ -98,35 +98,59 @@ export default function ProfilePage() {
         }
       }
 
-      const formDataToSend = new FormData()
-      formDataToSend.append('name', formData.name)
-      formDataToSend.append('address', formData.address)
-      
-      // Only append dateOfBirth if it's not empty
-      if (formData.dateOfBirth && formData.dateOfBirth.trim() !== '') {
-        formDataToSend.append('dateOfBirth', formData.dateOfBirth)
-      }
-      
+      // Handle profile image if there's a new one
       if (profileImage) {
-        formDataToSend.append('profileImage', profileImage)
+        try {
+          const imageFormData = new FormData()
+          imageFormData.append('profileImage', profileImage)
+          
+          const imageResponse = await fetch('http://localhost:7000/api/v1/users/updateProfileImage', {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: imageFormData
+          })
+          
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json()
+            console.log('Profile image updated successfully:', imageData)
+            toast.success('Profile image updated successfully!')
+          } else {
+            console.error('Failed to update profile image')
+            toast.error('Failed to update profile image')
+          }
+        } catch (error) {
+          console.error('Error handling image:', error)
+          toast.error('Failed to process profile image')
+        }
       }
 
-      // Debug: Log what we're sending
-      console.log('Sending profile update:', {
+      // Update profile information
+      const profileData = {
         name: formData.name,
-        address: formData.address,
-        dateOfBirth: formData.dateOfBirth,
-        hasImage: !!profileImage,
-        imageName: profileImage?.name
-      })
+        address: formData.address
+      }
+      
+      // Only add dateOfBirth if it's not empty
+      if (formData.dateOfBirth && formData.dateOfBirth.trim() !== '') {
+        profileData.dateOfBirth = formData.dateOfBirth
+      }
+
+      console.log('Sending profile update:', profileData)
+      console.log('Auth token:', localStorage.getItem('auth_token') ? 'Token exists' : 'No token')
 
       const response = await fetch('http://localhost:7000/api/v1/users/updateProfile', {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
         },
-        body: formDataToSend
+        body: JSON.stringify(profileData)
       })
+
+      console.log('Response status:', response.status)
+      console.log('Response headers:', response.headers)
 
       if (response.ok) {
         const data = await response.json()
@@ -145,9 +169,15 @@ export default function ProfilePage() {
         toast.success('Profile updated successfully!')
         setIsEditing(false)
       } else {
-        const errorData = await response.json()
-        console.error('Profile update failed:', errorData)
-        toast.error(errorData.message || 'Failed to update profile')
+        let errorMessage = 'Failed to update profile'
+        try {
+          const errorData = await response.json()
+          console.error('Profile update failed:', errorData)
+          errorMessage = errorData.message || errorData.error || errorMessage
+        } catch (parseError) {
+          console.error('Could not parse error response:', parseError)
+        }
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('Error updating profile:', error)

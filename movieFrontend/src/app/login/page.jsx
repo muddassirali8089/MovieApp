@@ -87,12 +87,31 @@ export default function LoginPage() {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('Login response:', data)
+        
         // Reset attempts on successful login
         setLoginAttempts(0)
         setIsBlocked(false)
-        // Use the login function from AuthContext
-        login(data.token)
-        toast.success('Login successful! Welcome back!')
+        
+        // Extract token and user data from the correct response structure
+        const token = data.token
+        const userData = data.data?.user
+        
+        if (!token) {
+          console.error('No token received:', data)
+          toast.error('Login failed: No token received')
+          return
+        }
+        
+        if (!userData) {
+          console.error('No user data received:', data)
+          toast.error('Login failed: No user data received')
+          return
+        }
+        
+        // Use the login function from AuthContext with both token and user data
+        login(token, userData)
+        toast.success(`Login successful! Welcome back, ${userData.name}!`)
         router.push('/')
       } else {
         // Handle failed login attempts
