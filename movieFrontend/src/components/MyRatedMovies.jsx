@@ -31,7 +31,7 @@ export default function MyRatedMovies() {
         return
       }
 
-      const response = await fetch('http://localhost:7000/api/v1/users/my-ratings', {
+      const response = await fetch('http://localhost:7000/api/v1/movies/my-ratings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -39,7 +39,9 @@ export default function MyRatedMovies() {
 
       if (response.ok) {
         const data = await response.json()
-        setRatedMovies(data.data.ratings)
+        console.log('My ratings data:', data)
+        // The API returns the array directly
+        setRatedMovies(data || [])
       } else {
         setError('Failed to fetch ratings')
       }
@@ -204,7 +206,7 @@ export default function MyRatedMovies() {
                 {rating.movie.category && (
                   <div className="flex items-center gap-1">
                     <Tag className="w-3 h-3" />
-                    <span>{rating.movie.category}</span>
+                    <span>Category ID: {rating.movie.category}</span>
                   </div>
                 )}
               </div>
