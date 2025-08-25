@@ -205,54 +205,11 @@ export const getMovieRecommendations = catchAsync(async (req, res, next) => {
   } catch (error) {
     console.error('❌ Error calling recommendation microservice:', error);
     
-    // Fallback: Return popular movies if microservice fails
-    const popularMovies = await Movie.aggregate([
-      {
-        $match: { averageRating: { $gte: 3.5 } }
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      {
-        $addFields: {
-          categoryName: {
-            $cond: {
-              if: { $gt: [{ $size: '$categoryInfo' }, 0] },
-              then: { $arrayElemAt: ['$categoryInfo.name', 0] },
-              else: 'Unknown Category'
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          description: 1,
-          image: 1,
-          averageRating: 1,
-          releaseDate: 1,
-          category: '$categoryName'
-        }
-      },
-      {
-        $sort: { averageRating: -1 }
-      },
-      {
-        $limit: limit
-      }
-    ]);
-
-    res.status(200).json({
-      status: "success",
-      message: "Microservice unavailable. Showing popular movies as fallback.",
-      results: popularMovies.length,
-      data: { recommendations: popularMovies }
+    // Return error - let the microservice handle everything
+    res.status(500).json({
+      status: "error",
+      message: "Failed to get recommendations from microservice",
+      error: error.message
     });
   }
 });
