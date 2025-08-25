@@ -4,11 +4,15 @@ import { Model } from 'mongoose';
 import { Movie, MovieDocument } from './schemas/movie.schema';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
+import { RecommendationService, RecommendationRequest } from './recommendation.service';
+import { RatingsService } from '../ratings/ratings.service';
 
 @Injectable()
 export class MoviesService {
   constructor(
     @InjectModel(Movie.name) private movieModel: Model<MovieDocument>,
+    private readonly recommendationService: RecommendationService,
+    private readonly ratingsService: RatingsService,
   ) {}
 
   async create(createMovieDto: CreateMovieDto): Promise<Movie> {
@@ -81,12 +85,46 @@ export class MoviesService {
     return deletedMovie;
   }
 
-  async getRecommendations(userId: string): Promise<Movie[]> {
-    // Simple recommendation logic - get movies with high ratings
-    return this.movieModel
-      .find({ averageRating: { $gte: 4 } })
-      .populate('category', 'name')
-      .limit(10)
-      .exec();
+  async getRecommendations(userId: string): Promise<any> {
+    try {
+      // Get all movies
+      const movies: MovieDocument[] = await this.movieModel
+        .find()
+        .populate('category', 'name')
+        .exec();
+
+      // Get user ratings
+      const userRatings = await this.ratingsService.findByUser(userId);
+
+      // Prepare request for microservice
+      const request: RecommendationRequest = {
+        userId,
+        userRatings: userRatings.map(rating => ({
+          movieId: rating.movie.toString(),
+          rating: rating.rating
+        })),
+        movies: movies.map(movie => ({
+          _id: (movie._id as any).toString(),
+          title: movie.title,
+          description: movie.description || '',
+          image: movie.image,
+          averageRating: movie.averageRating || 0,
+          releaseDate: movie.releaseDate?.toISOString() || '',
+          category: (movie.category as any)?.name || 'Unknown',
+          ratings: movie.ratings || []
+        })),
+        limit: 10
+      };
+
+      // Call microservice
+      return await this.recommendationService.getRecommendations(request);
+    } catch (error) {
+      // Fallback to simple recommendations if microservice fails
+      return this.movieModel
+        .find({ averageRating: { $gte: 4 } })
+        .populate('category', 'name')
+        .limit(10)
+        .exec();
+    }
   }
 }
