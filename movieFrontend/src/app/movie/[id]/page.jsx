@@ -15,17 +15,44 @@ export default function MovieDetailPage() {
   const router = useRouter()
 
   useEffect(() => {
-    fetchMovie()
+    if (params.id) {
+      fetchMovie()
+    } else {
+      toast.error('No movie ID provided')
+      router.push('/')
+    }
   }, [params.id])
 
   const fetchMovie = async () => {
     try {
       const response = await fetch(`http://localhost:7000/api/v1/movies/${params.id}`)
+      
       if (response.ok) {
         const data = await response.json()
-        setMovie(data.data.movie)
+        
+        // Check if the movie data is directly in the response or nested
+        const movieData = data.data?.movie || data
+        
+        if (movieData && movieData._id) {
+          setMovie(movieData)
+        } else {
+          toast.error('Invalid movie data received')
+        }
       } else {
-        toast.error('Movie not found')
+        let errorMessage = 'Movie not found'
+        try {
+          const errorData = await response.text()
+          try {
+            const errorJson = JSON.parse(errorData)
+            errorMessage = errorJson.message || errorJson.error || errorMessage
+          } catch (parseError) {
+            // Could not parse error as JSON, use default message
+          }
+        } catch (textError) {
+          // Could not read error response, use default message
+        }
+        
+        toast.error(errorMessage)
         router.push('/')
       }
     } catch (error) {
@@ -120,6 +147,7 @@ export default function MovieDetailPage() {
           <ArrowLeft className="w-5 h-5" />
           Back
         </motion.button>
+        
       </div>
 
       {/* Movie Hero Section */}

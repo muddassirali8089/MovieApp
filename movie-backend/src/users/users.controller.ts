@@ -55,12 +55,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
-  }
-
-  // Profile routes (matching Node.js exactly)
+  // Profile routes (matching Node.js exactly) - MUST come before :id route
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@Request() req: RequestWithUser) {
@@ -80,6 +75,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   getMyRatings(@Request() req: RequestWithUser) {
     return this.ratingsService.findByUser(req.user._id);
+  }
+
+  // Parameterized routes - MUST come after specific routes
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
