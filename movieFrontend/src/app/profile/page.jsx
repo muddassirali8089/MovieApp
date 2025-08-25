@@ -115,7 +115,8 @@ export default function ProfilePage() {
           if (imageResponse.ok) {
             const imageData = await imageResponse.json()
             console.log('Profile image updated successfully:', imageData)
-            toast.success('Profile image updated successfully!')
+            // Update user profile to show new image immediately
+            await refreshUserProfile()
           } else {
             console.error('Failed to update profile image')
             toast.error('Failed to update profile image')
@@ -163,7 +164,7 @@ export default function ProfilePage() {
         }
         setProfileImage(null)
         
-        // Update user in context
+        // Update user in context to reflect all changes
         await refreshUserProfile()
         
         toast.success('Profile updated successfully!')
@@ -307,10 +308,10 @@ export default function ProfilePage() {
                   <span>{user.address || 'Address not set'}</span>
                 </div>
                 
-                <div className="flex items-center gap-3 text-dark-300">
-                  <Calendar className="w-5 h-5" />
-                  <span>{formatDate(user.dateOfBirth)}</span>
-                </div>
+                                 <div className="flex items-center gap-3 text-dark-300">
+                   <Calendar className="w-5 h-5" />
+                   <span>{user.dateOfBirth ? formatDate(user.dateOfBirth) : 'Not set'}</span>
+                 </div>
               </div>
 
               {/* Action Buttons */}
