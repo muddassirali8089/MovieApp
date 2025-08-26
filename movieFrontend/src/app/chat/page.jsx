@@ -19,7 +19,7 @@ import ChatWindow from '@/components/chat/ChatWindow'
 import UserSearch from '@/components/chat/UserSearch'
 
 export default function ChatPage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [conversations, setConversations] = useState([])
@@ -28,6 +28,11 @@ export default function ChatPage() {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
+    // Wait for authentication to complete before checking user
+    if (loading) {
+      return
+    }
+    
     if (!user) {
       router.push('/login')
       return
@@ -35,7 +40,55 @@ export default function ChatPage() {
     
     fetchConversations()
     fetchUnreadCount()
-  }, [user, router])
+  }, [user, loading, router])
+
+  // Real-time event listener for new conversations and messages
+  useEffect(() => {
+    const handleNewConversationEvent = (event) => {
+      const { conversation } = event.detail
+      
+      // Check if this conversation already exists
+      const existingConversation = conversations.find(conv => conv._id === conversation._id)
+      
+      if (!existingConversation) {
+        // Add new conversation to the list
+        setConversations(prev => [conversation, ...prev])
+        
+        // If no conversation is currently selected, select this new one
+        if (!selectedConversation) {
+          setSelectedConversation(conversation)
+        }
+      }
+    }
+
+    const handleNewMessageEvent = (event) => {
+      const { conversationId, message } = event.detail
+      
+      // Update conversation with new message
+      setConversations(prev => 
+        prev.map(conv => 
+          conv._id === conversationId
+            ? { ...conv, lastMessage: message, lastActivity: new Date() }
+            : conv
+        )
+      )
+      
+      // Update unread count if message is from someone else
+      if (message.senderId !== user._id) {
+        fetchUnreadCount()
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('new_conversation', handleNewConversationEvent)
+    window.addEventListener('new_message', handleNewMessageEvent)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('new_conversation', handleNewConversationEvent)
+      window.removeEventListener('new_message', handleNewMessageEvent)
+    }
+  }, [conversations, selectedConversation])
 
   const fetchConversations = async () => {
     try {
@@ -106,14 +159,48 @@ export default function ChatPage() {
   }
 
   const handleMessageSent = (message) => {
-    // Update conversation last message
-    setConversations(prev => 
-      prev.map(conv => 
-        conv._id === selectedConversation._id 
-          ? { ...conv, lastMessage: message, lastActivity: new Date() }
-          : conv
+    // Check if this conversation already exists in the list
+    const existingConversation = conversations.find(conv => conv._id === message.conversationId);
+    
+    if (existingConversation) {
+      // Update existing conversation
+      setConversations(prev => 
+        prev.map(conv => 
+          conv._id === message.conversationId
+            ? { ...conv, lastMessage: message, lastActivity: new Date() }
+            : conv
+        )
       )
-    )
+    } else {
+      // This is a new conversation, we need to fetch it and add it to the list
+      fetchAndAddNewConversation(message.conversationId);
+    }
+  }
+
+  const fetchAndAddNewConversation = async (conversationId) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const newConversation = data.data
+        
+        // Add the new conversation to the list
+        setConversations(prev => [newConversation, ...prev])
+        
+        // If no conversation is currently selected, select this new one
+        if (!selectedConversation) {
+          setSelectedConversation(newConversation)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching new conversation:', error)
+    }
   }
 
   const handleDeleteConversation = async (conversationId) => {
@@ -139,6 +226,19 @@ export default function ChatPage() {
     }
   }
 
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading chat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect to login if no user after loading is complete
   if (!user) {
     return null
   }
