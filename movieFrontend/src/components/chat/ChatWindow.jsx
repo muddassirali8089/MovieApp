@@ -18,28 +18,11 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
   const inputRef = useRef(null)
   const { joinConversation, leaveConversation, startTyping, stopTyping, isConnected } = useSocket()
 
-  // Debug current user info
-  console.log('👤 Current User Debug:', {
-    currentUser: currentUser,
-    currentUserId: currentUser?._id,
-    currentUserIdType: typeof currentUser?._id,
-    currentUserIdString: currentUser?._id?.toString()
-  });
+
 
   const otherParticipant = conversation.participants.find(p => p._id !== currentUser._id)
   
-  // Debug conversation participants
-  console.log('💬 Conversation Debug:', {
-    conversationId: conversation._id,
-    participants: conversation.participants,
-    participantsIds: conversation.participants?.map(p => ({
-      id: p._id,
-      idType: typeof p._id,
-      idString: p._id?.toString(),
-      name: p.name
-    })),
-    otherParticipant: otherParticipant
-  });
+
 
   useEffect(() => {
     fetchMessages()
@@ -71,28 +54,23 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
 
   // Real-time event listeners
   useEffect(() => {
-    const handleNewMessage = (event) => {
-      const { conversationId, message } = event.detail
-      console.log('New message received:', { conversationId, messageConversationId: message.conversationId, conversationId: conversation._id })
-      
-      // Check if this message belongs to the current conversation
-      if (conversationId === conversation._id || message.conversationId === conversation._id) {
-        console.log('Adding message to current conversation')
-        
-        // Check if message already exists to prevent duplicates
-        setMessages(prev => {
-          const messageExists = prev.some(msg => msg._id === message._id)
-          if (messageExists) {
-            console.log('Message already exists, skipping duplicate')
-            return prev
-          }
-          console.log('Adding new message to state')
-          return [...prev, message]
-        })
-        
-        onMessageSent(message)
-      }
-    }
+         const handleNewMessage = (event) => {
+       const { conversationId, message } = event.detail
+       
+       // Check if this message belongs to the current conversation
+       if (conversationId === conversation._id || message.conversationId === conversation._id) {
+         // Check if message already exists to prevent duplicates
+         setMessages(prev => {
+           const messageExists = prev.some(msg => msg._id === message._id)
+           if (messageExists) {
+             return prev
+           }
+           return [...prev, message]
+         })
+         
+         onMessageSent(message)
+       }
+     }
 
     const handleUserTyping = (event) => {
       const { conversationId, userId, userName, isTyping } = event.detail
@@ -140,17 +118,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
       
       if (response.ok) {
         const data = await response.json()
-        console.log('📨 Fetched Messages Debug:', {
-          messages: data.data,
-          messageCount: data.data?.length,
-          firstMessage: data.data?.[0],
-          messageStructure: data.data?.[0] ? {
-            id: data.data[0]._id,
-            senderId: data.data[0].senderId,
-            senderIdType: typeof data.data[0].senderId,
-            content: data.data[0].content
-          } : null
-        });
+        
         setMessages(data.data || [])
       }
     } catch (error) {
@@ -184,19 +152,18 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         }),
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        const message = data.data
-        console.log('Message sent successfully:', message)
-        
-        // Don't add to local state here - let the real-time event handle it
-        // This prevents duplicate messages
-        // setMessages(prev => [...prev, message])
-        
-        onMessageSent(message)
-        setNewMessage('')
-        inputRef.current?.focus()
-      } else {
+             if (response.ok) {
+         const data = await response.json()
+         const message = data.data
+         
+         // Don't add to local state here - let the real-time event handle it
+         // This prevents duplicate messages
+         // setMessages(prev => [...prev, message])
+         
+         onMessageSent(message)
+         setNewMessage('')
+         inputRef.current?.focus()
+       } else {
         toast.error('Failed to send message')
       }
     } catch (error) {
@@ -275,10 +242,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
            </div>
          ) : (
            <div className="space-y-3">
-             {/* Debug: Show message count */}
-             <div className="text-xs text-dark-500 mb-2">
-               Total messages: {messages.length} | Current user ID: {currentUser._id?.toString().slice(-4)}
-             </div>
+             
              {messages.map((message) => {
                 // Conditional rendering: Only render if we have valid message data
                 if (!message || !message.senderId || !currentUser?._id) {
@@ -310,17 +274,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
                 
                 const isOwnMessage = messageSenderId === currentUserId;
                 
-                // Enhanced debug logging
-                console.log('🔍 Message alignment check:', {
-                  messageId: message._id,
-                  originalSenderId: message.senderId,
-                  extractedSenderId: messageSenderId,
-                  currentUserId: currentUserId,
-                  isOwnMessage: isOwnMessage,
-                  messageContent: message.content,
-                  comparison: `${messageSenderId} === ${currentUserId} = ${isOwnMessage}`,
-                  messageType: isOwnMessage ? 'SENDER (RIGHT)' : 'RECEIVER (LEFT)'
-                });
+                
                 
                 return (
                   <motion.div
@@ -330,16 +284,12 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
-                      isOwnMessage 
-                        ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
-                        : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
-                    }`}>
-                      {/* Debug indicator - remove this after fixing */}
-                      <div className="text-xs opacity-50 mb-1">
-                        {isOwnMessage ? '🔵 SENDER' : '⚫ RECEIVER'} | ID: {messageSenderId.slice(-4)}
-                      </div>
-                      <p className="text-sm leading-relaxed">{message.content}</p>
+                                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
+                       isOwnMessage 
+                         ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
+                         : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
+                     }`}>
+                       <p className="text-sm leading-relaxed">{message.content}</p>
                       <div className={`flex items-center justify-between mt-2 ${
                         isOwnMessage ? 'text-primary-200' : 'text-dark-400'
                       }`}>

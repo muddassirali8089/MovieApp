@@ -44,8 +44,6 @@
   justify-content: flex-end !important;
   align-items: flex-end !important;
   width: 100% !important;
-  /* Debug: Add border to see alignment */
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
 }
 
 /* Receiver messages (left side) - Dark background */
@@ -54,8 +52,6 @@
   justify-content: flex-start !important;
   align-items: flex-start !important;
   width: 100% !important;
-  /* Debug: Add border to see alignment */
-  border: 1px solid rgba(75, 85, 99, 0.3) !important;
 }
 
 /* Alternative selectors for backward compatibility */
