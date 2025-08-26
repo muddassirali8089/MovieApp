@@ -48,7 +48,7 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Add instance methods to the schema
+
 UserSchema.methods.correctPassword = async function(
   candidatePassword: string,
   userPassword: string,

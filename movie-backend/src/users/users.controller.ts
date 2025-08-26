@@ -8,7 +8,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   UseGuards,
   Request,
   BadRequestException,
@@ -21,7 +20,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RatingsService } from '../ratings/ratings.service';
 import { AuthService } from '../auth/auth.service';
@@ -66,7 +65,6 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  // Profile routes (matching Node.js exactly) - MUST come before :id route
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getProfile(@Request() req: RequestWithUser) {
@@ -96,30 +94,12 @@ export class UsersController {
     try {
       // Upload image to Cloudinary
       const imageUrl = await this.cloudinaryService.uploadImage(file, 'users');
-      
+
       // Update user profile with the new image URL
       return this.usersService.updateProfileImage(req.user._id, imageUrl);
     } catch (error) {
       throw new BadRequestException(`Failed to upload image: ${error.message}`);
     }
-  }
-
-  @Patch('changePassword')
-  @UseGuards(JwtAuthGuard)
-  changePassword(
-    @Body() changePasswordDto: ChangePasswordDto,
-    @Request() req: RequestWithUser,
-  ) {
-    return this.usersService.changePassword(req.user._id, changePasswordDto);
-  }
-
-  @Delete('deleteAccount')
-  @UseGuards(JwtAuthGuard)
-  deleteAccount(
-    @Body() body: { password: string },
-    @Request() req: RequestWithUser,
-  ) {
-    return this.usersService.deleteAccount(req.user._id, body.password);
   }
 
   @Get('my-ratings')
@@ -132,10 +112,5 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
   }
 }
