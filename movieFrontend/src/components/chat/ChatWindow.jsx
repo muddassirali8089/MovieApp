@@ -18,7 +18,28 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
   const inputRef = useRef(null)
   const { joinConversation, leaveConversation, startTyping, stopTyping, isConnected } = useSocket()
 
+  // Debug current user info
+  console.log('👤 Current User Debug:', {
+    currentUser: currentUser,
+    currentUserId: currentUser?._id,
+    currentUserIdType: typeof currentUser?._id,
+    currentUserIdString: currentUser?._id?.toString()
+  });
+
   const otherParticipant = conversation.participants.find(p => p._id !== currentUser._id)
+  
+  // Debug conversation participants
+  console.log('💬 Conversation Debug:', {
+    conversationId: conversation._id,
+    participants: conversation.participants,
+    participantsIds: conversation.participants?.map(p => ({
+      id: p._id,
+      idType: typeof p._id,
+      idString: p._id?.toString(),
+      name: p.name
+    })),
+    otherParticipant: otherParticipant
+  });
 
   useEffect(() => {
     fetchMessages()
@@ -119,6 +140,17 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
       
       if (response.ok) {
         const data = await response.json()
+        console.log('📨 Fetched Messages Debug:', {
+          messages: data.data,
+          messageCount: data.data?.length,
+          firstMessage: data.data?.[0],
+          messageStructure: data.data?.[0] ? {
+            id: data.data[0]._id,
+            senderId: data.data[0].senderId,
+            senderIdType: typeof data.data[0].senderId,
+            content: data.data[0].content
+          } : null
+        });
         setMessages(data.data || [])
       }
     } catch (error) {
@@ -234,48 +266,98 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         </div>
       </div>
 
-      {/* Messages Container - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 chat-messages bg-gradient-to-b from-dark-800 to-dark-900" style={{ height: '0' }}>
-        {messages.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-dark-400">No messages yet</p>
-            <p className="text-sm text-dark-500">Start the conversation!</p>
-          </div>
-        ) : (
-          messages.map((message) => {
-            const isOwnMessage = message.senderId?.toString() === currentUser._id?.toString();
-            
-            return (
-              <motion.div
-                key={message._id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
-                  isOwnMessage 
-                    ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
-                    : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
-                }`}>
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  <div className={`flex items-center justify-between mt-2 ${
-                    isOwnMessage ? 'text-primary-200' : 'text-dark-400'
-                  }`}>
-                    <span className="text-xs">
-                      {formatMessageTime(message.createdAt)}
-                    </span>
-                    {message.isRead && isOwnMessage && (
-                      <span className="text-xs ml-2">✓✓</span>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+             {/* Messages Container - Scrollable */}
+       <div className="flex-1 overflow-y-auto p-4 chat-messages bg-gradient-to-b from-dark-800 to-dark-900" style={{ height: '0' }}>
+         {messages.length === 0 ? (
+           <div className="text-center py-8">
+             <p className="text-dark-400">No messages yet</p>
+             <p className="text-sm text-dark-500">Start the conversation!</p>
+           </div>
+         ) : (
+           <div className="space-y-3">
+             {/* Debug: Show message count */}
+             <div className="text-xs text-dark-500 mb-2">
+               Total messages: {messages.length} | Current user ID: {currentUser._id?.toString().slice(-4)}
+             </div>
+             {messages.map((message) => {
+                // Conditional rendering: Only render if we have valid message data
+                if (!message || !message.senderId || !currentUser?._id) {
+                  console.warn('⚠️ Skipping invalid message:', message);
+                  return null;
+                }
+                
+                // Fix: Extract sender ID properly - handle both string and object cases
+                let messageSenderId;
+                if (typeof message.senderId === 'string') {
+                  messageSenderId = message.senderId;
+                } else if (message.senderId && typeof message.senderId === 'object' && message.senderId._id) {
+                  messageSenderId = message.senderId._id;
+                } else {
+                  messageSenderId = message.senderId?.toString() || '';
+                }
+                
+                const currentUserId = currentUser._id?.toString();
+                
+                // Additional validation: Ensure we have valid IDs for comparison
+                if (!messageSenderId || !currentUserId) {
+                  console.warn('⚠️ Skipping message with invalid IDs:', {
+                    messageSenderId,
+                    currentUserId,
+                    message
+                  });
+                  return null;
+                }
+                
+                const isOwnMessage = messageSenderId === currentUserId;
+                
+                // Enhanced debug logging
+                console.log('🔍 Message alignment check:', {
+                  messageId: message._id,
+                  originalSenderId: message.senderId,
+                  extractedSenderId: messageSenderId,
+                  currentUserId: currentUserId,
+                  isOwnMessage: isOwnMessage,
+                  messageContent: message.content,
+                  comparison: `${messageSenderId} === ${currentUserId} = ${isOwnMessage}`,
+                  messageType: isOwnMessage ? 'SENDER (RIGHT)' : 'RECEIVER (LEFT)'
+                });
+                
+                return (
+                  <motion.div
+                    key={message._id}
+                    className={`flex message-container ${isOwnMessage ? 'justify-end sender-message' : 'justify-start receiver-message'}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
+                      isOwnMessage 
+                        ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
+                        : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
+                    }`}>
+                      {/* Debug indicator - remove this after fixing */}
+                      <div className="text-xs opacity-50 mb-1">
+                        {isOwnMessage ? '🔵 SENDER' : '⚫ RECEIVER'} | ID: {messageSenderId.slice(-4)}
+                      </div>
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <div className={`flex items-center justify-between mt-2 ${
+                        isOwnMessage ? 'text-primary-200' : 'text-dark-400'
+                      }`}>
+                        <span className="text-xs">
+                          {formatMessageTime(message.createdAt)}
+                        </span>
+                        {message.isRead && isOwnMessage && (
+                          <span className="text-xs ml-2">✓✓</span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
+           </div>
+         )}
+         <div ref={messagesEndRef} />
+       </div>
 
       {/* Typing Indicator - Fixed */}
       {typingUsers.length > 0 && (

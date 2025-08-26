@@ -24,6 +24,75 @@
   overflow-x: hidden;
 }
 
+/* Force message stacking - critical for preventing inline display */
+.chat-messages > div {
+  display: block !important;
+  width: 100% !important;
+  margin-bottom: 12px !important;
+}
+
+/* Ensure message containers are properly stacked */
+.chat-messages .space-y-3 {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+/* Sender messages (right side) - Blue background */
+.chat-messages .sender-message {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+  width: 100% !important;
+  /* Debug: Add border to see alignment */
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Receiver messages (left side) - Dark background */
+.chat-messages .receiver-message {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  /* Debug: Add border to see alignment */
+  border: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+/* Alternative selectors for backward compatibility */
+.chat-messages .flex.justify-end {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: flex-end !important;
+  width: 100% !important;
+}
+
+.chat-messages .flex.justify-start {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+}
+
+/* Ensure message bubbles don't collapse */
+.chat-messages .message-bubble {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+}
+
+/* Force sender message bubbles to align right */
+.chat-messages .sender-message .message-bubble {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+/* Force receiver message bubbles to align left */
+.chat-messages .receiver-message .message-bubble {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
 /* Message bubble animations */
 .message-bubble {
   animation: messageSlideIn 0.3s ease-out;
