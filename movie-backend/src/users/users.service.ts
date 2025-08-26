@@ -84,5 +84,21 @@ export class UsersService {
     return updatedUser;
   }
 
-  
+  async findById(id: string): Promise<User | null> {
+    return this.userModel.findById(id).exec();
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    const regex = new RegExp(query, 'i');
+    return this.userModel
+      .find({
+        $or: [
+          { name: { $regex: regex } },
+          { email: { $regex: regex } },
+        ],
+      })
+      .select('_id name email profileImage')
+      .limit(10)
+      .exec();
+  }
 }

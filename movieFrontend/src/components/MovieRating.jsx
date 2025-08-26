@@ -32,7 +32,7 @@ export default function MovieRating({ movieId, initialRating = 0, onRatingChange
       }
 
       // Get token from localStorage for API call
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('token')
       if (!token) {
         setLoading(false)
         setHasRated(false)
@@ -113,7 +113,7 @@ export default function MovieRating({ movieId, initialRating = 0, onRatingChange
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ rating: newRating })
       })

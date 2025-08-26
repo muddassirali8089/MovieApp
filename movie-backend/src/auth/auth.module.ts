@@ -10,7 +10,7 @@ import { UsersModule } from '../users/users.module';
     forwardRef(() => UsersModule),
     PassportModule,
     JwtModule.register({
-      secret: 'your-super-secret-jwthyujhgty-',
+      secret: 'your-super-secret-jwt-key-here',
       signOptions: { expiresIn: '90d' },
     }),
   ],

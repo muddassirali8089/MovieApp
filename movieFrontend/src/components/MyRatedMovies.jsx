@@ -23,7 +23,7 @@ export default function MyRatedMovies() {
   const fetchMyRatings = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('token')
       
       if (!token) {
         setError('Authentication required')

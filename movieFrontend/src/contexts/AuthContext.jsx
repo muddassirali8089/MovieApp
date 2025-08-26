@@ -52,13 +52,13 @@ export const AuthProvider = ({ children }) => {
       } else {
         console.log('Profile fetch failed, removing token')
         // If token is invalid, remove it
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('token')
         setUser(null)
       }
     } catch (error) {
       console.error('Error fetching user profile:', error)
       // If there's an error, remove the token
-      localStorage.removeItem('auth_token')
+      localStorage.removeItem('token')
       setUser(null)
     } finally {
       setLoading(false)
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     console.log('Login called with token and user data:', token ? 'Token exists' : 'No token')
     
     // Store token in localStorage
-    localStorage.setItem('auth_token', token)
+    localStorage.setItem('token', token)
     console.log('Token stored in localStorage')
     
     // Set user data immediately from login response
@@ -91,12 +91,12 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
-    localStorage.removeItem('auth_token')
+    localStorage.removeItem('token')
     setUser(null)
   }
 
   const refreshUserProfile = () => {
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('token')
     if (token) {
       fetchUserProfile(token)
     } else {
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in on mount
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('token')
     if (token) {
       fetchUserProfile(token)
     } else {

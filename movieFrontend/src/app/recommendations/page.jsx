@@ -40,7 +40,7 @@ export default function RecommendationsPage() {
       setLoading(true)
       setError(null)
 
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('token')
       if (!token) {
         throw new Error('No authentication token found')
       }

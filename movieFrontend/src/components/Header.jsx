@@ -14,7 +14,8 @@ import {
   Star,
   Home,
   Film,
-  Sparkles
+  Sparkles,
+  MessageCircle
 } from 'lucide-react'
 
 export default function Header() {
@@ -102,6 +103,19 @@ export default function Header() {
 
           {/* Right Side */}
           <div className="flex items-center space-x-4">
+            {user && (
+              <Link href="/chat" className="relative">
+                <motion.button
+                  className="flex items-center gap-2 p-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-all duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  <span className="hidden sm:block">Chat</span>
+                  {/* Unread indicator will be added here */}
+                </motion.button>
+              </Link>
+            )}
             {user ? (
               <div className="relative user-dropdown">
                 <motion.button
@@ -239,6 +253,10 @@ export default function Header() {
               </Link>
               {user ? (
                 <>
+                  <Link href="/chat" className="text-white hover:text-primary-400 transition-colors py-2 flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                    <MessageCircle className="w-4 h-4" />
+                    Chat
+                  </Link>
                   <Link href="/recommendations" className="text-white hover:text-primary-400 transition-colors py-2 flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
                     <Sparkles className="w-4 h-4" />
                     Recommendations

@@ -104,13 +104,13 @@ export default function ProfilePage() {
           const imageFormData = new FormData()
           imageFormData.append('profileImage', profileImage)
           
-          const imageResponse = await fetch('http://localhost:7000/api/v1/users/updateProfileImage', {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-            },
-            body: imageFormData
-          })
+                     const imageResponse = await fetch('http://localhost:7000/api/v1/users/updateProfileImage', {
+             method: 'PATCH',
+             headers: {
+               'Authorization': `Bearer ${localStorage.getItem('token')}`
+             },
+             body: imageFormData
+           })
           
           if (imageResponse.ok) {
             const imageData = await imageResponse.json()
@@ -139,12 +139,12 @@ export default function ProfilePage() {
       }
 
       console.log('Sending profile update:', profileData)
-      console.log('Auth token:', localStorage.getItem('auth_token') ? 'Token exists' : 'No token')
+      console.log('Auth token:', localStorage.getItem('token') ? 'Token exists' : 'No token')
 
       const response = await fetch('http://localhost:7000/api/v1/users/updateProfile', {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(profileData)

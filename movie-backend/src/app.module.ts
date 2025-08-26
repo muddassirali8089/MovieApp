@@ -9,6 +9,7 @@ import { MoviesModule } from './movies/movies.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CategoriesModule,
     RatingsModule,
     CloudinaryModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
