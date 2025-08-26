@@ -40,7 +40,7 @@ export class AppService {
   getRecommendations(request: RecommendationRequest) {
     const { userId, userRatings = [], movies, limit = 10 } = request;
 
-    this.logger.log(`🔍 User ${userId || 'Anonymous'} - ${movies.length} movies, ${userRatings.length} ratings`);
+   
 
     // Find movies rated 1 or 2 stars - NEVER recommend these
     const badMovieIds = userRatings
@@ -52,7 +52,7 @@ export class AppService {
         const movie = movies.find(m => m._id === id);
         return movie?.title || id;
       });
-      this.logger.log(`🚫 NEVER recommend: ${badMovies.join(', ')}`);
+     
     }
 
     // Simple: exclude bad movies, return good ones
@@ -62,7 +62,7 @@ export class AppService {
       .sort((a, b) => b.averageRating - a.averageRating) // Best first
       .slice(0, limit);
 
-    this.logger.log(`✅ Returning ${goodMovies.length} movies (excluded ${badMovieIds.length} bad ones)`);
+    
 
     return {
       status: 'success',
