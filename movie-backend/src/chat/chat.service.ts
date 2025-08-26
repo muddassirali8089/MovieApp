@@ -6,6 +6,7 @@ import { Conversation, ConversationDocument } from './schemas/conversation.schem
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UsersService } from '../users/users.service';
+import { ChatEvents } from './chat.events';
 
 @Injectable()
 export class ChatService {
@@ -13,6 +14,7 @@ export class ChatService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(Conversation.name) private conversationModel: Model<ConversationDocument>,
     private usersService: UsersService,
+    private chatEvents: ChatEvents,
   ) {}
 
   async createConversation(userId: string, createConversationDto: CreateConversationDto): Promise<Conversation> {
@@ -100,6 +102,9 @@ export class ChatService {
       lastActivity: new Date(),
     });
 
+    // Emit event for real-time updates
+    this.chatEvents.emitNewMessage(conversationId, savedMessage);
+
     return savedMessage;
   }
 
@@ -137,7 +142,16 @@ export class ChatService {
 
     message.isRead = true;
     message.readAt = new Date();
-    return await message.save();
+    const updatedMessage = await message.save();
+
+    // Emit event for real-time updates
+    this.chatEvents.emitMessageRead(
+      updatedMessage.conversationId.toString(),
+      messageId,
+      userId,
+    );
+
+    return updatedMessage;
   }
 
   async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
@@ -169,6 +183,10 @@ export class ChatService {
   async searchUsers(query: string, currentUserId: string): Promise<any[]> {
     const users = await this.usersService.searchUsers(query);
     return users.filter(user => user._id.toString() !== currentUserId);
+  }
+
+  async getUserById(userId: string): Promise<any> {
+    return this.usersService.findById(userId);
   }
 
   async deleteConversation(conversationId: string, userId: string): Promise<void> {

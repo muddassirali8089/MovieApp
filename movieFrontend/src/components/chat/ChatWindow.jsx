@@ -4,25 +4,90 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Send, User } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useSocket } from '@/contexts/SocketContext'
 
 export default function ChatWindow({ conversation, currentUser, onMessageSent, onMarkAsRead }) {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
+  const [typingUsers, setTypingUsers] = useState([])
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const { joinConversation, leaveConversation, startTyping, stopTyping, isConnected } = useSocket()
 
   const otherParticipant = conversation.participants.find(p => p._id !== currentUser._id)
 
   useEffect(() => {
     fetchMessages()
     onMarkAsRead()
-  }, [conversation._id])
+    
+    // Simple conversation tracking
+    if (conversation._id) {
+      joinConversation(conversation._id)
+    }
+
+    // Cleanup
+    return () => {
+      if (conversation._id) {
+        leaveConversation(conversation._id)
+      }
+    }
+  }, [conversation._id, joinConversation, leaveConversation])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Real-time event listeners
+  useEffect(() => {
+    const handleNewMessage = (event) => {
+      const { conversationId, message } = event.detail
+      console.log('New message received:', { conversationId, messageConversationId: message.conversationId, conversationId: conversation._id })
+      
+      // Check if this message belongs to the current conversation
+      if (conversationId === conversation._id || message.conversationId === conversation._id) {
+        console.log('Adding message to current conversation')
+        setMessages(prev => [...prev, message])
+        onMessageSent(message)
+      }
+    }
+
+    const handleUserTyping = (event) => {
+      const { conversationId, userId, userName, isTyping } = event.detail
+      if (conversationId === conversation._id && userId !== currentUser._id) {
+        if (isTyping) {
+          setTypingUsers(prev => [...prev.filter(u => u.userId !== userId), { userId, userName }])
+        } else {
+          setTypingUsers(prev => prev.filter(u => u.userId !== userId))
+        }
+      }
+    }
+
+    const handleMessageRead = (event) => {
+      const { conversationId, messageId, readBy } = event.detail
+      if (conversationId === conversation._id) {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg._id === messageId ? { ...msg, isRead: true } : msg
+          )
+        )
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('new_message', handleNewMessage)
+    window.addEventListener('user_typing', handleUserTyping)
+    window.addEventListener('message_read', handleMessageRead)
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('new_message', handleNewMessage)
+      window.removeEventListener('user_typing', handleUserTyping)
+      window.removeEventListener('message_read', handleMessageRead)
+    }
+  }, [conversation._id, currentUser._id, onMessageSent])
 
   const fetchMessages = async () => {
     try {
@@ -50,6 +115,10 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
     if (!newMessage.trim() || isSending) return
 
     setIsSending(true)
+    
+    // Stop typing indicator
+    stopTyping(conversation._id)
+    setIsTyping(false)
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversation._id}/messages`, {
@@ -67,6 +136,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
       if (response.ok) {
         const data = await response.json()
         const message = data.data
+        console.log('Message sent successfully:', message)
         setMessages(prev => [...prev, message])
         onMessageSent(message)
         setNewMessage('')
@@ -107,8 +177,15 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
 
   return (
     <div className="bg-dark-800 rounded-xl border border-dark-700 h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-dark-700">
+             {/* Header */}
+       <div className="p-4 border-b border-dark-700">
+         {/* Connection Status */}
+         <div className="mb-2 text-xs">
+           <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+           <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+             {isConnected ? 'Connected' : 'Disconnected'}
+           </span>
+         </div>
         <div className="flex items-center gap-3">
           {otherParticipant.profileImage ? (
             <img
@@ -169,18 +246,56 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-dark-700">
+             {/* Typing Indicator */}
+       {typingUsers.length > 0 && (
+         <div className="px-4 py-2 border-t border-dark-700 bg-dark-800/50">
+           <div className="flex items-center gap-2">
+             <div className="flex space-x-1">
+               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
+               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+             </div>
+             <span className="text-sm text-dark-400">
+               {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+             </span>
+           </div>
+         </div>
+       )}
+
+       {/* Message Input */}
+       <div className="p-4 border-t border-dark-700">
         <form onSubmit={sendMessage} className="flex gap-3">
-          <input
-            ref={inputRef}
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            disabled={isSending}
-          />
+                     <input
+             ref={inputRef}
+             type="text"
+             value={newMessage}
+             onChange={(e) => {
+               setNewMessage(e.target.value)
+               // Handle typing indicators
+               if (e.target.value && !isTyping) {
+                 setIsTyping(true)
+                 startTyping(conversation._id)
+               } else if (!e.target.value && isTyping) {
+                 setIsTyping(false)
+                 stopTyping(conversation._id)
+               }
+             }}
+             onFocus={() => {
+               if (newMessage && !isTyping) {
+                 setIsTyping(true)
+                 startTyping(conversation._id)
+               }
+             }}
+             onBlur={() => {
+               if (isTyping) {
+                 setIsTyping(false)
+                 stopTyping(conversation._id)
+               }
+             }}
+             placeholder="Type a message..."
+             className="flex-1 px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+             disabled={isSending}
+           />
           <motion.button
             type="submit"
             disabled={!newMessage.trim() || isSending}

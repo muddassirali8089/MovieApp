@@ -3,6 +3,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import Header from '@/components/Header'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { SocketProvider } from '@/contexts/SocketContext'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -25,21 +26,23 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <ErrorBoundary>
           <AuthProvider>
-            <Header />
-            <main className="pt-16">
-              {children}
-            </main>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#1f2937',
-                  color: '#fff',
-                  border: '1px solid #374151',
-                },
-              }}
-            />
+            <SocketProvider>
+              <Header />
+              <main className="pt-16">
+                {children}
+              </main>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1f2937',
+                    color: '#fff',
+                    border: '1px solid #374151',
+                  },
+                }}
+              />
+            </SocketProvider>
           </AuthProvider>
         </ErrorBoundary>
       </body>
