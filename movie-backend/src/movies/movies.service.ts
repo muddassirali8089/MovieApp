@@ -127,7 +127,15 @@ export class MoviesService {
       console.log('Sample movie:', request.movies[0]);
 
       // Call microservice and return its response
-      return await this.recommendationService.getRecommendations(request);
+      const microserviceResponse = await this.recommendationService.getRecommendations(request);
+      
+      // Debug: Log what microservice returned
+      console.log('🔍 DEBUG: Microservice response:');
+      console.log('Status:', microserviceResponse.status);
+      console.log('Results count:', microserviceResponse.results);
+      console.log('Recommended movies:', microserviceResponse.data?.recommendations?.map((m: any) => m.title) || []);
+      
+      return microserviceResponse;
     } catch (error) {
       // If microservice fails, return error response
       console.error('❌ Recommendation microservice failed:', error);
