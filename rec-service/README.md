@@ -4,9 +4,9 @@ A simple NestJS microservice that provides movie recommendations based on user r
 
 ## 🚀 Features
 
-- **Simple Logic**: Returns popular movies if no user ratings
-- **Smart Filtering**: Excludes movies rated below 3 stars
-- **Quality Filter**: Only recommends movies with average rating >= 3.5
+- **Simple Logic**: Excludes movies rated below 3 stars by the user
+- **User Rating Tracking**: Keeps track of what movies users don't like
+- **Quality Filter**: Only recommends movies with decent ratings (>= 3.5)
 - **Independent Service**: Runs on port 5000, separate from main API
 
 ## 📡 API Endpoints
@@ -33,6 +33,10 @@ POST /recommendations
     {
       "movieId": "movie_id_2", 
       "rating": 2
+    },
+    {
+      "movieId": "movie_id_3", 
+      "rating": 3
     }
   ],
   "movies": [
@@ -51,6 +55,8 @@ POST /recommendations
 }
 ```
 
+**Note**: The service excludes movies you rated 1 or 2 stars (below 3 stars) from recommendations.
+
 **Response:**
 ```json
 {
@@ -58,16 +64,16 @@ POST /recommendations
   "results": 5,
   "data": {
     "recommendations": [
-      {
-        "_id": "movie_id",
-        "title": "Movie Title",
-        "description": "Movie description", 
-        "image": "image_url",
-        "averageRating": 4.2,
-        "releaseDate": "2023-01-01",
-        "category": "Action",
-        "recommendationScore": 4.7
-      }
+                        {
+                    "_id": "movie_id",
+                    "title": "Movie Title",
+                    "description": "Movie description", 
+                    "image": "image_url",
+                    "averageRating": 4.2,
+                    "releaseDate": "2023-01-01",
+                    "category": "Action",
+                    "recommendationScore": 4.7
+                  }
     ]
   }
 }
@@ -106,14 +112,14 @@ const response = await fetch('http://localhost:5000/recommendations', {
 
 ## 🎯 How It Works
 
-1. **No Ratings**: Returns popular movies (rating >= 3.5)
-2. **With Ratings**: Excludes movies rated < 3 stars
-3. **Scoring**: Combines average rating + popularity bonus
-4. **Sorting**: Returns top movies by recommendation score
+1. **User Rating Check**: Checks if user has rated any movies below 3 stars
+2. **Exclusion Logic**: Excludes movies rated 1 or 2 stars from recommendations
+3. **Quality Filter**: Only recommends movies with average rating >= 3.5
+4. **Popular Movies**: Returns popular movies that user hasn't rated poorly
 
-## 🌟 Simple & Lightweight
+## 🌟 Simple & Effective
 
 - No database dependencies
-- No complex algorithms
-- Just smart filtering and sorting
+- Simple exclusion logic
+- User rating tracking
 - Perfect for microservice architecture

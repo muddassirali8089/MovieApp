@@ -4,7 +4,10 @@ import { Model } from 'mongoose';
 import { Movie, MovieDocument } from './schemas/movie.schema';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
-import { RecommendationService, RecommendationRequest } from './recommendation.service';
+import {
+  RecommendationService,
+  RecommendationRequest,
+} from './recommendation.service';
 import { RatingsService } from '../ratings/ratings.service';
 
 @Injectable()
@@ -99,11 +102,11 @@ export class MoviesService {
       // Prepare request for microservice
       const request: RecommendationRequest = {
         userId,
-        userRatings: userRatings.map(rating => ({
-          movieId: rating.movie.toString(),
-          rating: rating.rating
+        userRatings: userRatings.map((rating) => ({
+          movieId: (rating.movie as any)._id || rating.movie.toString(),
+          rating: rating.rating,
         })),
-        movies: movies.map(movie => ({
+        movies: movies.map((movie) => ({
           _id: (movie._id as any).toString(),
           title: movie.title,
           description: movie.description || '',
@@ -111,20 +114,30 @@ export class MoviesService {
           averageRating: movie.averageRating || 0,
           releaseDate: movie.releaseDate?.toISOString() || '',
           category: (movie.category as any)?.name || 'Unknown',
-          ratings: movie.ratings || []
+          ratings: movie.ratings || [],
         })),
-        limit: 10
+        limit: 10,
       };
 
-      // Call microservice
+      // Debug: Log what we're sending to microservice
+      console.log('🔍 DEBUG: User ratings being sent to microservice:');
+      console.log('User ID:', userId);
+      console.log('User Ratings:', JSON.stringify(request.userRatings, null, 2));
+      console.log('Movies count:', request.movies.length);
+      console.log('Sample movie:', request.movies[0]);
+
+      // Call microservice and return its response
       return await this.recommendationService.getRecommendations(request);
     } catch (error) {
-      // Fallback to simple recommendations if microservice fails
-      return this.movieModel
-        .find({ averageRating: { $gte: 4 } })
-        .populate('category', 'name')
-        .limit(10)
-        .exec();
+      // If microservice fails, return error response
+      console.error('❌ Recommendation microservice failed:', error);
+      return {
+        status: 'error',
+        message: 'Recommendation service unavailable',
+        error: error.message,
+        data: { recommendations: [] },
+        results: 0,
+      };
     }
   }
 }

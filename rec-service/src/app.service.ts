@@ -11,6 +11,11 @@ export interface Movie {
   ratings?: any[];
 }
 
+export interface RecommendationMovie extends Movie {
+  recommendationScore: number;
+  matchReason?: string;
+}
+
 export interface UserRating {
   movieId: string;
   rating: number;
@@ -31,53 +36,40 @@ export class AppService {
     return 'Hello from Recommendation Microservice!';
   }
 
-  // Simple recommendation logic
+    // SUPER SIMPLE: exclude movies rated below 3 stars
   getRecommendations(request: RecommendationRequest) {
     const { userId, userRatings = [], movies, limit = 10 } = request;
-    
-    // Enhanced user debugging
-    this.logger.log(`🔍 Generating movie recommendations for user: ${userId || 'Anonymous'}`);
-    this.logger.log(`📊 Request details: ${movies.length} movies, ${userRatings.length} user ratings, limit: ${limit}`);
-    
-    if (userId) {
-      this.logger.log(`👤 User ${userId} has rated ${userRatings.length} movies`);
-      if (userRatings.length > 0) {
-        const ratingSummary = userRatings.map(r => `${r.movieId}: ${r.rating}⭐`).join(', ');
-        this.logger.log(`📝 User ratings: ${ratingSummary}`);
-      }
-    }
-    
-    // Get movies user rated less than 3 stars (don't recommend these)
-    const lowRatedMovieIds = userRatings
-      .filter(r => r.rating < 3)
+
+    this.logger.log(`🔍 User ${userId || 'Anonymous'} - ${movies.length} movies, ${userRatings.length} ratings`);
+
+    // Find movies rated 1 or 2 stars - NEVER recommend these
+    const badMovieIds = userRatings
+      .filter(r => r.rating === 1 || r.rating === 2)
       .map(r => r.movieId);
     
-    this.logger.log(`❌ Excluding ${lowRatedMovieIds.length} low-rated movies for user ${userId || 'Anonymous'}`);
-    
-    // Filter out low-rated movies and get popular ones
-    const recommendations = movies
-      .filter(movie => !lowRatedMovieIds.includes(movie._id))
-      .filter(movie => movie.averageRating >= 3.5) // Only movies with decent ratings
-      .map(movie => ({
-        _id: movie._id,
-        title: movie.title,
-        description: movie.description,
-        image: movie.image,
-        averageRating: movie.averageRating,
-        releaseDate: movie.releaseDate,
-        category: movie.category,
-        recommendationScore: movie.averageRating + ((movie.ratings && movie.ratings.length >= 3) ? 0.5 : 0)
-      }))
-      .sort((a, b) => b.recommendationScore - a.recommendationScore)
+    if (badMovieIds.length > 0) {
+      const badMovies = badMovieIds.map(id => {
+        const movie = movies.find(m => m._id === id);
+        return movie?.title || id;
+      });
+      this.logger.log(`🚫 NEVER recommend: ${badMovies.join(', ')}`);
+    }
+
+    // Simple: exclude bad movies, return good ones
+    const goodMovies = movies
+      .filter(movie => !badMovieIds.includes(movie._id)) // Remove 1-2 star rated movies
+      .filter(movie => movie.averageRating >= 3.0) // Only decent movies
+      .sort((a, b) => b.averageRating - a.averageRating) // Best first
       .slice(0, limit);
-    
-    this.logger.log(`✅ Generated ${recommendations.length} recommendations for user ${userId || 'Anonymous'}`);
-    this.logger.log(`🎯 Top recommendation: ${recommendations[0]?.title || 'None'} (Score: ${recommendations[0]?.recommendationScore || 0})`);
-    
+
+    this.logger.log(`✅ Returning ${goodMovies.length} movies (excluded ${badMovieIds.length} bad ones)`);
+
     return {
       status: 'success',
-      results: recommendations.length,
-      data: { recommendations }
+      results: goodMovies.length,
+      data: { recommendations: goodMovies }
     };
   }
+
+
 }

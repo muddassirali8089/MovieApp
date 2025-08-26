@@ -30,6 +30,13 @@ export class RecommendationService {
 
   async getRecommendations(request: RecommendationRequest) {
     this.logger.log(`🔍 Calling recommendation microservice for user: ${request.userId || 'Anonymous'}`);
+    this.logger.log(`📊 Request details: ${request.movies.length} movies, ${(request.userRatings || []).length} user ratings`);
+    
+    // Log user ratings for debugging
+    if (request.userRatings && request.userRatings.length > 0) {
+      const ratingSummary = request.userRatings.map((r) => `${r.movieId}: ${r.rating}⭐`).join(', ');
+      this.logger.log(`📝 User ratings: ${ratingSummary}`);
+    }
     
     try {
       const response = await fetch(`${this.microserviceUrl}/recommendations`, {
@@ -47,45 +54,16 @@ export class RecommendationService {
       const result = await response.json();
       this.logger.log(`✅ Microservice returned ${result.results} recommendations`);
       
+      // Log the actual recommendations for debugging
+      if (result.data?.recommendations) {
+        const movieTitles = result.data.recommendations.map((m: any) => m.title).join(', ');
+        this.logger.log(`🎬 Recommended movies: ${movieTitles}`);
+      }
+      
       return result;
     } catch (error) {
       this.logger.error(`❌ Error calling recommendation microservice: ${error.message}`);
-      
-      // Fallback: return popular movies if microservice fails
-      this.logger.log('🔄 Falling back to local recommendation logic');
-      return this.getFallbackRecommendations(request);
+      throw error; // Re-throw to let the main service handle it
     }
-  }
-
-  private getFallbackRecommendations(request: RecommendationRequest) {
-    const { userRatings = [], movies, limit = 10 } = request;
-    
-    // Simple fallback logic
-    const lowRatedMovieIds = userRatings
-      .filter(r => r.rating < 3)
-      .map(r => r.movieId);
-    
-    const recommendations = movies
-      .filter(movie => !lowRatedMovieIds.includes(movie._id))
-      .filter(movie => movie.averageRating >= 3.5)
-      .sort((a, b) => b.averageRating - a.averageRating)
-      .slice(0, limit)
-      .map(movie => ({
-        _id: movie._id,
-        title: movie.title,
-        description: movie.description,
-        image: movie.image,
-        averageRating: movie.averageRating,
-        releaseDate: movie.releaseDate,
-        category: movie.category,
-        recommendationScore: movie.averageRating
-      }));
-
-    return {
-      status: 'success',
-      results: recommendations.length,
-      data: { recommendations },
-      message: 'Using fallback recommendations (microservice unavailable)'
-    };
   }
 }
