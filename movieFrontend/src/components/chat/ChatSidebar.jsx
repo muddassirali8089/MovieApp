@@ -32,27 +32,50 @@ export default function ChatSidebar({
   })
 
   const getOtherParticipant = (conversation) => {
+    if (!conversation?.participants || !Array.isArray(conversation.participants)) {
+      return null
+    }
+    
     // Find the participant that is not the current user
-    // We need to get the current user ID from context or props
-    return conversation.participants.find(p => p._id !== currentUser?._id) || conversation.participants[0]
+    const otherParticipant = conversation.participants.find(p => p._id !== currentUser?._id)
+    return otherParticipant || conversation.participants[0] || null
   }
 
   const getLastMessagePreview = (conversation) => {
-    if (!conversation.lastMessage) return 'No messages yet'
+    if (!conversation.lastMessage || !conversation.lastMessage.content) {
+      return 'No messages yet'
+    }
     
     const content = conversation.lastMessage.content
+    if (typeof content !== 'string') {
+      return 'No messages yet'
+    }
+    
     return content.length > 30 ? `${content.substring(0, 30)}...` : content
   }
 
   const formatLastActivity = (date) => {
-    const now = new Date()
-    const lastActivity = new Date(date)
-    const diffInHours = Math.floor((now - lastActivity) / (1000 * 60 * 60))
+    if (!date) return 'Just now'
     
-    if (diffInHours < 1) return 'Just now'
-    if (diffInHours < 24) return `${diffInHours}h ago`
-    if (diffInHours < 48) return 'Yesterday'
-    return lastActivity.toLocaleDateString()
+    try {
+      const now = new Date()
+      const lastActivity = new Date(date)
+      
+      // Check if date is valid
+      if (isNaN(lastActivity.getTime())) {
+        return 'Just now'
+      }
+      
+      const diffInHours = Math.floor((now - lastActivity) / (1000 * 60 * 60))
+      
+      if (diffInHours < 1) return 'Just now'
+      if (diffInHours < 24) return `${diffInHours}h ago`
+      if (diffInHours < 48) return 'Yesterday'
+      return lastActivity.toLocaleDateString()
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return 'Just now'
+    }
   }
 
   const handleDeleteClick = (conversationId) => {
@@ -110,10 +133,17 @@ export default function ChatSidebar({
           <div className="space-y-2">
             {filteredConversations.map((conversation) => {
               const otherParticipant = getOtherParticipant(conversation)
+              
+              // Skip rendering if no valid participant found
+              if (!otherParticipant) {
+                return null
+              }
+              
               const isSelected = selectedConversation?._id === conversation._id
-                             const hasUnread = conversation.lastMessage && 
+              const hasUnread = conversation.lastMessage && 
+                                conversation.lastMessage.senderId && 
                                 conversation.lastMessage.senderId !== currentUser?._id &&
-                                !conversation.lastMessage.isRead
+                                conversation.lastMessage.isRead === false
 
               return (
                 <motion.div
