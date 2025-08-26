@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Send, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useSocket } from '@/contexts/SocketContext'
+import './chat.css'
 
 export default function ChatWindow({ conversation, currentUser, onMessageSent, onMarkAsRead }) {
   const [messages, setMessages] = useState([])
@@ -39,6 +40,13 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom()
+    }
+  }, [messages.length])
 
   // Real-time event listeners
   useEffect(() => {
@@ -153,7 +161,13 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
   }
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end',
+        inline: 'nearest'
+      })
+    }
   }
 
   const formatMessageTime = (date) => {
@@ -177,15 +191,15 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
 
   return (
     <div className="bg-dark-800 rounded-xl border border-dark-700 h-full flex flex-col">
-             {/* Header */}
-       <div className="p-4 border-b border-dark-700">
-         {/* Connection Status */}
-         <div className="mb-2 text-xs">
-           <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-           <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
-             {isConnected ? 'Connected' : 'Disconnected'}
-           </span>
-         </div>
+      {/* Header - Fixed */}
+      <div className="p-4 border-b border-dark-700 flex-shrink-0">
+        {/* Connection Status */}
+        <div className="mb-2 text-xs">
+          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+          <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </span>
+        </div>
         <div className="flex items-center gap-3">
           {otherParticipant.profileImage ? (
             <img
@@ -205,8 +219,8 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages Container - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 chat-messages bg-gradient-to-b from-dark-800 to-dark-900" style={{ height: '0' }}>
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-dark-400">No messages yet</p>
@@ -214,7 +228,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
           </div>
         ) : (
           messages.map((message) => {
-            const isOwnMessage = message.senderId === currentUser._id
+            const isOwnMessage = message.senderId === currentUser._id;
             
             return (
               <motion.div
@@ -224,20 +238,22 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
                   isOwnMessage 
-                    ? 'bg-primary-600 text-white' 
-                    : 'bg-dark-700 text-white'
+                    ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
+                    : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
                 }`}>
-                  <p className="text-sm">{message.content}</p>
-                  <p className={`text-xs mt-1 ${
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <div className={`flex items-center justify-between mt-2 ${
                     isOwnMessage ? 'text-primary-200' : 'text-dark-400'
                   }`}>
-                    {formatMessageTime(message.createdAt)}
+                    <span className="text-xs">
+                      {formatMessageTime(message.createdAt)}
+                    </span>
                     {message.isRead && isOwnMessage && (
-                      <span className="ml-2">✓</span>
+                      <span className="text-xs ml-2">✓✓</span>
                     )}
-                  </p>
+                  </div>
                 </div>
               </motion.div>
             )
@@ -246,60 +262,60 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         <div ref={messagesEndRef} />
       </div>
 
-             {/* Typing Indicator */}
-       {typingUsers.length > 0 && (
-         <div className="px-4 py-2 border-t border-dark-700 bg-dark-800/50">
-           <div className="flex items-center gap-2">
-             <div className="flex space-x-1">
-               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
-               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-               <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-             </div>
-             <span className="text-sm text-dark-400">
-               {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
-             </span>
-           </div>
-         </div>
-       )}
+      {/* Typing Indicator - Fixed */}
+      {typingUsers.length > 0 && (
+        <div className="px-4 py-2 border-t border-dark-700 bg-dark-800/50 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-primary-400 rounded-full typing-dot"></div>
+              <div className="w-2 h-2 bg-primary-400 rounded-full typing-dot"></div>
+              <div className="w-2 h-2 bg-primary-400 rounded-full typing-dot"></div>
+            </div>
+            <span className="text-sm text-dark-400">
+              {typingUsers.map(u => u.userName).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+            </span>
+          </div>
+        </div>
+      )}
 
-       {/* Message Input */}
-       <div className="p-4 border-t border-dark-700">
+      {/* Message Input - Fixed */}
+      <div className="p-4 border-t border-dark-700 flex-shrink-0">
         <form onSubmit={sendMessage} className="flex gap-3">
-                     <input
-             ref={inputRef}
-             type="text"
-             value={newMessage}
-             onChange={(e) => {
-               setNewMessage(e.target.value)
-               // Handle typing indicators
-               if (e.target.value && !isTyping) {
-                 setIsTyping(true)
-                 startTyping(conversation._id)
-               } else if (!e.target.value && isTyping) {
-                 setIsTyping(false)
-                 stopTyping(conversation._id)
-               }
-             }}
-             onFocus={() => {
-               if (newMessage && !isTyping) {
-                 setIsTyping(true)
-                 startTyping(conversation._id)
-               }
-             }}
-             onBlur={() => {
-               if (isTyping) {
-                 setIsTyping(false)
-                 stopTyping(conversation._id)
-               }
-             }}
-             placeholder="Type a message..."
-             className="flex-1 px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-             disabled={isSending}
-           />
+          <input
+            ref={inputRef}
+            type="text"
+            value={newMessage}
+            onChange={(e) => {
+              setNewMessage(e.target.value)
+              // Handle typing indicators
+              if (e.target.value && !isTyping) {
+                setIsTyping(true)
+                startTyping(conversation._id)
+              } else if (!e.target.value && isTyping) {
+                setIsTyping(false)
+                stopTyping(conversation._id)
+              }
+            }}
+            onFocus={() => {
+              if (newMessage && !isTyping) {
+                setIsTyping(true)
+                startTyping(conversation._id)
+              }
+            }}
+            onBlur={() => {
+              if (isTyping) {
+                setIsTyping(false)
+                stopTyping(conversation._id)
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-3 bg-dark-700 border border-dark-600 rounded-xl text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+            disabled={isSending}
+          />
           <motion.button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
