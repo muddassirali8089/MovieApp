@@ -234,14 +234,14 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
       </div>
 
              {/* Messages Container - Scrollable */}
-       <div className="flex-1 overflow-y-auto p-4 chat-messages bg-gradient-to-b from-dark-800 to-dark-900" style={{ height: '0' }}>
+       <div className="flex-1 overflow-y-auto p-2 chat-messages bg-gradient-to-b from-dark-800 to-dark-900" style={{ height: '0' }}>
          {messages.length === 0 ? (
            <div className="text-center py-8">
              <p className="text-dark-400">No messages yet</p>
              <p className="text-sm text-dark-500">Start the conversation!</p>
            </div>
          ) : (
-           <div className="space-y-3">
+                       <div className="space-y-1">
              
              {messages.map((message) => {
                 // Conditional rendering: Only render if we have valid message data
@@ -284,23 +284,23 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg message-bubble ${
-                       isOwnMessage 
-                         ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
-                         : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
-                     }`}>
-                       <p className="text-sm leading-relaxed">{message.content}</p>
-                      <div className={`flex items-center justify-between mt-2 ${
-                        isOwnMessage ? 'text-primary-200' : 'text-dark-400'
+                                                                                   <div className={`max-w-xs lg:max-w-md px-2 py-1 rounded-md shadow-sm message-bubble ${
+                        isOwnMessage 
+                          ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white rounded-br-md' 
+                          : 'bg-gradient-to-br from-dark-700 to-dark-600 text-white rounded-bl-md'
                       }`}>
-                        <span className="text-xs">
-                          {formatMessageTime(message.createdAt)}
-                        </span>
-                        {message.isRead && isOwnMessage && (
-                          <span className="text-xs ml-2">✓✓</span>
-                        )}
-                      </div>
-                    </div>
+                        <p className="text-xs leading-tight">{message.content}</p>
+                       <div className={`flex items-center justify-between mt-1 ${
+                         isOwnMessage ? 'text-primary-200' : 'text-dark-400'
+                       }`}>
+                         <span className="text-xs">
+                           {formatMessageTime(message.createdAt)}
+                         </span>
+                         {message.isRead && isOwnMessage && (
+                           <span className="text-xs ml-2">✓✓</span>
+                         )}
+                       </div>
+                     </div>
                   </motion.div>
                 )
               })}

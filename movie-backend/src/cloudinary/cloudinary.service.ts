@@ -10,8 +10,8 @@ export class CloudinaryService {
     // Configure Cloudinary
     cloudinary.config({
       cloud_name: 'dujmvhjyt',
-      api_key: process.env.CLOUDINARY_API_KEY ,
-      api_secret: process.env.CLOUDINARY_API_SECRET ,
+      api_key: process.env.CLOUDINARY_API_KEY || '326117899546833' ,
+      api_secret: process.env.CLOUDINARY_API_SECRET || '3Ko_by9cM9Zj0c2VLM0_J1tIkfI' ,
     });
   }
 
