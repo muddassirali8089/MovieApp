@@ -57,7 +57,18 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
       // Check if this message belongs to the current conversation
       if (conversationId === conversation._id || message.conversationId === conversation._id) {
         console.log('Adding message to current conversation')
-        setMessages(prev => [...prev, message])
+        
+        // Check if message already exists to prevent duplicates
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg._id === message._id)
+          if (messageExists) {
+            console.log('Message already exists, skipping duplicate')
+            return prev
+          }
+          console.log('Adding new message to state')
+          return [...prev, message]
+        })
+        
         onMessageSent(message)
       }
     }
@@ -145,7 +156,11 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
         const data = await response.json()
         const message = data.data
         console.log('Message sent successfully:', message)
-        setMessages(prev => [...prev, message])
+        
+        // Don't add to local state here - let the real-time event handle it
+        // This prevents duplicate messages
+        // setMessages(prev => [...prev, message])
+        
         onMessageSent(message)
         setNewMessage('')
         inputRef.current?.focus()
@@ -228,7 +243,7 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
           </div>
         ) : (
           messages.map((message) => {
-            const isOwnMessage = message.senderId === currentUser._id;
+            const isOwnMessage = message.senderId?.toString() === currentUser._id?.toString();
             
             return (
               <motion.div
