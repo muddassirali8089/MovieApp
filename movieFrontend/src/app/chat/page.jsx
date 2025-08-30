@@ -367,10 +367,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-900">
-      <div className="container mx-auto px-4 py-6">
+    <div className="h-100vh bg-dark-900">
+      <div className="container mx-auto px-4 py-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <motion.button
               onClick={() => router.back()}
@@ -398,9 +398,9 @@ export default function ChatPage() {
         </div>
 
         {/* Chat Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]"> 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 overflow-x-auto ">
             <ChatSidebar
               conversations={conversations}
               selectedConversation={selectedConversation}
