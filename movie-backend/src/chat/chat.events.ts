@@ -16,4 +16,8 @@ export class ChatEvents {
   emitNewConversation(conversationId: string, conversation: any) {
     this.eventEmitter.emit('chat.conversation.created', { conversationId, conversation });
   }
+
+  emitConversationUpdate(conversationId: string, conversation: any) {
+    this.eventEmitter.emit('chat.conversation.updated', { conversationId, conversation });
+  }
 }

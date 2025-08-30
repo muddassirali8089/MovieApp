@@ -42,25 +42,8 @@ export default function ChatPage() {
     fetchUnreadCount()
   }, [user, loading, router])
 
-  // Real-time event listener for new conversations and messages
+  // Real-time event listener for new messages and conversation updates
   useEffect(() => {
-    const handleNewConversationEvent = (event) => {
-      const { conversation } = event.detail
-      
-      // Check if this conversation already exists
-      const existingConversation = conversations.find(conv => conv._id === conversation._id)
-      
-      if (!existingConversation) {
-        // Add new conversation to the list
-        setConversations(prev => [conversation, ...prev])
-        
-        // If no conversation is currently selected, select this new one
-        if (!selectedConversation) {
-          setSelectedConversation(conversation)
-        }
-      }
-    }
-
     const handleNewMessageEvent = (event) => {
       const { conversationId, message } = event.detail
       
@@ -79,14 +62,40 @@ export default function ChatPage() {
       }
     }
 
+    const handleConversationUpdatedEvent = (event) => {
+      const { conversationId, conversation } = event.detail
+      console.log('🔄 Conversation updated event received:', conversationId, conversation)
+
+      const existingConversation = conversations.find(conv => conv._id === conversationId)
+
+      if (!existingConversation) {
+        console.log('➕ Adding new conversation to list:', conversation)
+        setConversations(prev => [conversation, ...prev])
+        if (!selectedConversation) {
+          setSelectedConversation(conversation)
+        }
+        fetchUnreadCount() // Update unread count since this is a new conversation
+      } else {
+        console.log('🔄 Updating existing conversation:', conversationId)
+        setConversations(prev =>
+          prev.map(conv =>
+            conv._id === conversationId ? conversation : conv
+          )
+        )
+        if (selectedConversation?._id === conversationId) {
+          setSelectedConversation(conversation)
+        }
+      }
+    }
+
     // Add event listeners
-    window.addEventListener('new_conversation', handleNewConversationEvent)
     window.addEventListener('new_message', handleNewMessageEvent)
+    window.addEventListener('conversation_updated', handleConversationUpdatedEvent)
 
     // Cleanup
     return () => {
-      window.removeEventListener('new_conversation', handleNewConversationEvent)
       window.removeEventListener('new_message', handleNewMessageEvent)
+      window.removeEventListener('conversation_updated', handleConversationUpdatedEvent)
     }
   }, [conversations, selectedConversation])
 

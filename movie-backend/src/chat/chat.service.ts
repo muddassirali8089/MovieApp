@@ -42,9 +42,13 @@ export class ChatService {
         .populate('participants', 'name email profileImage')
         .exec();
       
+      if (!populatedExisting) {
+        throw new NotFoundException('Failed to populate existing conversation');
+      }
+      
       console.log('✅ Existing conversation found with populated users:', populatedExisting);
       return populatedExisting;
-    }
+    } 
 
     // Create new conversation
     const conversation = new this.conversationModel({
@@ -61,10 +65,14 @@ export class ChatService {
       .populate('participants', 'name email profileImage')
       .exec();
 
+    if (!populatedConversation) {
+      throw new NotFoundException('Failed to populate new conversation');
+    }
+
     console.log('✅ New conversation created with populated users:', populatedConversation);
     
-    // Emit event for real-time updates with populated data
-    this.chatEvents.emitNewConversation(populatedConversation._id.toString(), populatedConversation);
+    // Don't emit any events when creating conversation - only when messages are sent
+    // This prevents duplicate displays and premature notifications
     
     return populatedConversation;
   }
@@ -122,8 +130,23 @@ export class ChatService {
       lastActivity: new Date(),
     });
 
+    // Get the populated conversation for real-time updates
+    const populatedConversation = await this.conversationModel
+      .findById(conversationId)
+      .populate('participants', 'name email profileImage')
+      .populate('lastMessage')
+      .exec();
+
+    if (!populatedConversation) {
+      throw new NotFoundException('Failed to populate conversation for real-time updates');
+    }
+
     // Emit event for real-time updates
     this.chatEvents.emitNewMessage(conversationId, savedMessage);
+    
+    // Emit conversation update for ALL participants - this ensures receivers get the conversation
+    // even if they don't have it in their list yet
+    this.chatEvents.emitConversationUpdate(conversationId, populatedConversation);
 
     return savedMessage;
   }
