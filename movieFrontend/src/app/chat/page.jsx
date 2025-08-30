@@ -44,60 +44,91 @@ export default function ChatPage() {
 
   // Real-time event listener for new messages and conversation updates
   useEffect(() => {
+    console.log('🔧 Setting up real-time event listeners...')
+    
     const handleNewMessageEvent = (event) => {
       const { conversationId, message } = event.detail
+      console.log('📨 New message event received:', { conversationId, message })
       
-      // Update conversation with new message
-      setConversations(prev => 
-        prev.map(conv => 
-          conv._id === conversationId
-            ? { ...conv, lastMessage: message, lastActivity: new Date() }
-            : conv
+      // Check if this conversation already exists in the user's list
+      const existingConversation = conversations.find(conv => conv._id === conversationId)
+      
+      if (!existingConversation) {
+        console.log('🆕 New conversation detected from message, fetching conversation details...')
+        // This is a new conversation, fetch it and add to list
+        fetchAndAddNewConversation(conversationId);
+      } else {
+        console.log('🔄 Updating existing conversation with new message')
+        // Update conversation with new message
+        setConversations(prev => 
+          prev.map(conv => 
+            conv._id === conversationId
+              ? { ...conv, lastMessage: message, lastActivity: new Date() }
+              : conv
+          )
         )
-      )
+      }
       
       // Update unread count if message is from someone else
       if (message.senderId !== user._id) {
+        console.log('🔄 Updating unread count for new message from other user')
         fetchUnreadCount()
       }
     }
 
     const handleConversationUpdatedEvent = (event) => {
       const { conversationId, conversation } = event.detail
-      console.log('🔄 Conversation updated event received:', conversationId, conversation)
+      console.log('🔄 Conversation updated event received:', { conversationId, conversation })
+      console.log('📋 Current conversations list:', conversations)
+      console.log('👤 Current user:', user._id)
 
       const existingConversation = conversations.find(conv => conv._id === conversationId)
+      console.log('🔍 Existing conversation found:', existingConversation)
 
       if (!existingConversation) {
         console.log('➕ Adding new conversation to list:', conversation)
-        setConversations(prev => [conversation, ...prev])
+        setConversations(prev => {
+          const newList = [conversation, ...prev]
+          console.log('📝 Updated conversations list:', newList)
+          return newList
+        })
+        
         if (!selectedConversation) {
+          console.log('🎯 Setting as selected conversation')
           setSelectedConversation(conversation)
         }
+        
+        console.log('🔢 Fetching unread count for new conversation')
         fetchUnreadCount() // Update unread count since this is a new conversation
       } else {
         console.log('🔄 Updating existing conversation:', conversationId)
-        setConversations(prev =>
-          prev.map(conv =>
+        setConversations(prev => {
+          const updatedList = prev.map(conv =>
             conv._id === conversationId ? conversation : conv
           )
-        )
+          console.log('📝 Updated conversations list:', updatedList)
+          return updatedList
+        })
+        
         if (selectedConversation?._id === conversationId) {
+          console.log('🎯 Updating selected conversation')
           setSelectedConversation(conversation)
         }
       }
     }
 
     // Add event listeners
+    console.log('🎧 Adding event listeners for new_message and conversation_updated')
     window.addEventListener('new_message', handleNewMessageEvent)
     window.addEventListener('conversation_updated', handleConversationUpdatedEvent)
 
     // Cleanup
     return () => {
+      console.log('🧹 Cleaning up event listeners')
       window.removeEventListener('new_message', handleNewMessageEvent)
       window.removeEventListener('conversation_updated', handleConversationUpdatedEvent)
     }
-  }, [conversations, selectedConversation])
+  }, [conversations, selectedConversation, user])
 
   const fetchConversations = async () => {
     try {

@@ -18,6 +18,9 @@ export class ChatEvents {
   }
 
   emitConversationUpdate(conversationId: string, conversation: any) {
+    console.log('📡 ChatEvents: Emitting chat.conversation.updated for:', conversationId)
+    console.log('📡 ChatEvents: Event payload:', { conversationId, conversation })
     this.eventEmitter.emit('chat.conversation.updated', { conversationId, conversation });
+    console.log('✅ ChatEvents: chat.conversation.updated event emitted successfully')
   }
 }

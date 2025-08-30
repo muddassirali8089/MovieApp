@@ -142,11 +142,16 @@ export class ChatService {
     }
 
     // Emit event for real-time updates
+    console.log('📡 Emitting new_message event for conversation:', conversationId)
     this.chatEvents.emitNewMessage(conversationId, savedMessage);
     
     // Emit conversation update for ALL participants - this ensures receivers get the conversation
     // even if they don't have it in their list yet
+    console.log('📡 Emitting conversation_updated event for conversation:', conversationId)
+    console.log('👥 Participants in conversation:', populatedConversation.participants.map(p => ({ id: p._id, name: (p as any).name })))
+    console.log('🔧 About to call chatEvents.emitConversationUpdate...')
     this.chatEvents.emitConversationUpdate(conversationId, populatedConversation);
+    console.log('✅ chatEvents.emitConversationUpdate called successfully')
 
     return savedMessage;
   }
