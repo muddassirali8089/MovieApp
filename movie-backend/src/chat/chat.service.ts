@@ -36,7 +36,14 @@ export class ChatService {
     });
 
     if (existingConversation) {
-      return existingConversation;
+      // Return populated conversation if it already exists
+      const populatedExisting = await this.conversationModel
+        .findById(existingConversation._id)
+        .populate('participants', 'name email profileImage')
+        .exec();
+      
+      console.log('✅ Existing conversation found with populated users:', populatedExisting);
+      return populatedExisting;
     }
 
     // Create new conversation
@@ -46,7 +53,20 @@ export class ChatService {
       lastActivity: new Date(),
     });
 
-    return await conversation.save();
+    const savedConversation = await conversation.save();
+    
+    // Return populated conversation immediately
+    const populatedConversation = await this.conversationModel
+      .findById(savedConversation._id)
+      .populate('participants', 'name email profileImage')
+      .exec();
+
+    console.log('✅ New conversation created with populated users:', populatedConversation);
+    
+    // Emit event for real-time updates with populated data
+    this.chatEvents.emitNewConversation(populatedConversation._id.toString(), populatedConversation);
+    
+    return populatedConversation;
   }
 
   async getConversations(userId: string): Promise<Conversation[]> {

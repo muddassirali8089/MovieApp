@@ -129,10 +129,43 @@ export default function ChatPage() {
     }
   }
 
-  const handleNewConversation = (conversation) => {
-    setConversations(prev => [conversation, ...prev])
-    setSelectedConversation(conversation)
-    setShowUserSearch(false)
+  const handleNewConversation = async (conversation) => {
+    console.log('🆕 New conversation created:', conversation);
+    
+    // Fetch the full conversation with populated user data
+    const populatedConversation = await fetchConversationWithUsers(conversation._id);
+    
+    if (populatedConversation) {
+      setConversations(prev => [populatedConversation, ...prev]);
+      setSelectedConversation(populatedConversation);
+    } else {
+      // Fallback: add the conversation as is
+      setConversations(prev => [conversation, ...prev]);
+      setSelectedConversation(conversation);
+    }
+    
+    setShowUserSearch(false);
+  }
+
+  // Helper function to fetch conversation with populated user data
+  const fetchConversationWithUsers = async (conversationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Fetched populated conversation:', data.data);
+        return data.data;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching conversation with users:', error);
+    }
+    return null;
   }
 
   const handleConversationSelect = (conversation) => {
