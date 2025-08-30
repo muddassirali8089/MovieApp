@@ -186,11 +186,15 @@ export class ChatService {
       
       // Emit events for each message that was marked as read
       for (const message of unreadMessages) {
-        this.chatEvents.emitMessageRead(
-          conversationId,
-          message._id.toString(),
-          userId,
-        );
+        // Use type assertion to safely access _id
+        const messageId = (message as any)._id?.toString();
+        if (messageId) {
+          this.chatEvents.emitMessageRead(
+            conversationId,
+            messageId,
+            userId,
+          );
+        }
       }
     } else {
       console.log(`ℹ️ No unread messages found in conversation ${conversationId}`);
