@@ -8,7 +8,7 @@ import {
   DeleteConfirmation, 
   LoadingSkeleton 
 } from './components'
-import { filterConversations } from './utils/chatUtils'
+import { filterConversations, sortConversationsByActivity } from './utils/chatUtils'
 import { useChatSidebar } from './hooks/useChatSidebar'
 
 export default function ChatSidebar({
@@ -29,7 +29,9 @@ export default function ChatSidebar({
     clearDeleteConfirm
   } = useChatSidebar(onDeleteConversation)
 
-  const filteredConversations = filterConversations(conversations, searchQuery, currentUser?._id)
+  // Sort conversations by last activity (newest first) - this will move active conversations to top
+  const sortedConversations = sortConversationsByActivity(conversations)
+  const filteredConversations = filterConversations(sortedConversations, searchQuery, currentUser?._id)
 
   if (isLoading) {
     return <LoadingSkeleton type="conversation" />

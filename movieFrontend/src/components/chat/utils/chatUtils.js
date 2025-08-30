@@ -54,6 +54,20 @@ export const hasUnreadMessages = (conversation, currentUserId) => {
          conversation.lastMessage.isRead === false
 }
 
+export const sortConversationsByActivity = (conversations) => {
+  if (!conversations || !Array.isArray(conversations)) {
+    return []
+  }
+
+  return [...conversations].sort((a, b) => {
+    const dateA = new Date(a.lastActivity || a.lastMessage?.createdAt || 0)
+    const dateB = new Date(b.lastActivity || b.lastMessage?.createdAt || 0)
+    
+    // Most recent first (descending order)
+    return dateB.getTime() - dateA.getTime()
+  })
+}
+
 export const filterConversations = (conversations, searchQuery, currentUserId) => {
   if (!searchQuery) return conversations
   

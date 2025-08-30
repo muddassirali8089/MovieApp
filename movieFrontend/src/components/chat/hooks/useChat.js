@@ -45,6 +45,7 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
           return [...prev, message]
         })
         
+        // Call onMessageSent to update conversation order in sidebar
         onMessageSent(message)
       }
     }
@@ -127,7 +128,10 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
       
       if (response.ok) {
         const data = await response.json()
-        onMessageSent(data.data)
+        const message = data.data
+        
+        // Call onMessageSent to update conversation order in sidebar
+        onMessageSent(message)
         setNewMessage('')
         inputRef.current?.focus()
       } else {
