@@ -1,77 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, User, X, MessageCircle } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { motion } from 'framer-motion'
+import { User, X, MessageCircle, Search } from 'lucide-react'
+import { SearchBar, Avatar } from './components'
+import { useUserSearch } from './hooks/useUserSearch'
 
 export default function UserSearch({ onClose, onNewConversation, currentUserId }) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [users, setUsers] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-
-  useEffect(() => {
-    if (searchQuery.length >= 2) {
-      searchUsers()
-    } else {
-      setUsers([])
-    }
-  }, [searchQuery])
-
-  const searchUsers = async () => {
-    if (searchQuery.length < 2) return
-    
-    setIsLoading(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/search-users?q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.data || [])
-      }
-    } catch (error) {
-      console.error('Error searching users:', error)
-      toast.error('Failed to search users')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const createConversation = async (userId) => {
-    setIsCreating(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          participantId: userId
-        }),
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        onNewConversation(data.data)
-        toast.success('Conversation created!')
-      } else {
-        toast.error('Failed to create conversation')
-      }
-    } catch (error) {
-      console.error('Error creating conversation:', error)
-      toast.error('Failed to create conversation')
-    } finally {
-      setIsCreating(false)
-    }
-  }
+  const {
+    searchQuery,
+    setSearchQuery,
+    users,
+    isLoading,
+    isCreating,
+    createConversation
+  } = useUserSearch(onNewConversation)
 
   return (
     <motion.div
@@ -103,17 +45,12 @@ export default function UserSearch({ onClose, onNewConversation, currentUserId }
 
         {/* Search Input */}
         <div className="p-4 border-b border-dark-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-dark-400" />
-            <input
-              type="text"
-              placeholder="Search users by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              autoFocus
-            />
-          </div>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search users by name or email..."
+            autoFocus
+          />
         </div>
 
         {/* Users List */}
@@ -144,20 +81,11 @@ export default function UserSearch({ onClose, onNewConversation, currentUserId }
                   whileTap={{ scale: 0.98 }}
                   onClick={() => createConversation(user._id)}
                 >
-                  {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    {user.profileImage ? (
-                      <img
-                        src={user.profileImage}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                  </div>
+                  <Avatar
+                    src={user.profileImage}
+                    alt={user.name}
+                    size="md"
+                  />
 
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
