@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
-export const useUserSearch = (onNewConversation) => {
+export const useUserSearch = (onNewConversation, currentUserId, existingConversations) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -29,7 +29,31 @@ export const useUserSearch = (onNewConversation) => {
       
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.data || [])
+        let allUsers = data.data || []
+        
+        // Filter out the current user and users already in conversations
+        const filteredUsers = allUsers.filter(user => {
+          // Don't show current user
+          if (user._id === currentUserId) {
+            console.log(`🚫 Filtering out current user: ${user.name}`)
+            return false
+          }
+          
+          // Don't show users already in conversations
+          const existingConversation = existingConversations.find(conv => 
+            conv.participants.some(participant => participant._id === user._id)
+          )
+          
+          if (existingConversation) {
+            console.log(`🚫 Filtering out user already in conversation: ${user.name}`)
+            return false
+          }
+          
+          return true
+        })
+        
+        console.log(`🔍 Search results: ${allUsers.length} total users, ${filteredUsers.length} available users`)
+        setUsers(filteredUsers)
       }
     } catch (error) {
       console.error('Error searching users:', error)
@@ -40,6 +64,16 @@ export const useUserSearch = (onNewConversation) => {
   }
 
   const createConversation = async (userId) => {
+    // Double-check if conversation already exists
+    const existingConversation = existingConversations.find(conv => 
+      conv.participants.some(participant => participant._id === userId)
+    )
+    
+    if (existingConversation) {
+      toast.error('Conversation already exists with this user')
+      return
+    }
+    
     setIsCreating(true)
     try {
       const token = localStorage.getItem('token')

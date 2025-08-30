@@ -5,7 +5,7 @@ import { User, X, MessageCircle, Search } from 'lucide-react'
 import { SearchBar, Avatar } from './components'
 import { useUserSearch } from './hooks/useUserSearch'
 
-export default function UserSearch({ onClose, onNewConversation, currentUserId }) {
+export default function UserSearch({ onClose, onNewConversation, currentUserId, existingConversations }) {
   const {
     searchQuery,
     setSearchQuery,
@@ -13,7 +13,7 @@ export default function UserSearch({ onClose, onNewConversation, currentUserId }
     isLoading,
     isCreating,
     createConversation
-  } = useUserSearch(onNewConversation)
+  } = useUserSearch(onNewConversation, currentUserId, existingConversations)
 
   return (
     <motion.div
@@ -64,12 +64,13 @@ export default function UserSearch({ onClose, onNewConversation, currentUserId }
             <div className="p-8 text-center">
               <Search className="w-12 h-12 text-dark-600 mx-auto mb-3" />
               <p className="text-dark-400">Type at least 2 characters to search</p>
+              <p className="text-sm text-dark-500">Search by name or email</p>
             </div>
           ) : users.length === 0 ? (
             <div className="p-8 text-center">
               <User className="w-12 h-12 text-dark-600 mx-auto mb-3" />
               <p className="text-dark-400">No users found</p>
-              <p className="text-sm text-dark-500">Try a different search term</p>
+              <p className="text-sm text-dark-500">Try a different search term or check if user is already in a conversation</p>
             </div>
           ) : (
             <div className="p-2">

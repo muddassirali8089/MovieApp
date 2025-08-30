@@ -441,6 +441,7 @@ export default function ChatPage() {
             onClose={() => setShowUserSearch(false)}
             onNewConversation={handleNewConversation}
             currentUserId={user._id}
+            existingConversations={conversations}
           />
         )}
       </AnimatePresence>
