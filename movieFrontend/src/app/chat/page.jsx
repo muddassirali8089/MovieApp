@@ -59,14 +59,15 @@ export default function ChatPage() {
         fetchAndAddNewConversation(conversationId);
       } else {
         console.log('🔄 Updating existing conversation with new message')
-        // Update conversation with new message
-        setConversations(prev => 
-          prev.map(conv => 
+        // Update conversation with new message and sort by activity
+        setConversations(prev => {
+          const updatedConversations = prev.map(conv => 
             conv._id === conversationId
               ? { ...conv, lastMessage: message, lastActivity: new Date() }
               : conv
           )
-        )
+          return sortConversationsByActivity(updatedConversations)
+        })
       }
       
       // Update unread count if message is from someone else
@@ -130,6 +131,15 @@ export default function ChatPage() {
     }
   }, [conversations, selectedConversation, user])
 
+  // Utility function to sort conversations by last activity (newest first)
+  const sortConversationsByActivity = (conversationsList) => {
+    return [...conversationsList].sort((a, b) => {
+      const aTime = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
+      const bTime = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+      return bTime - aTime
+    })
+  }
+
   const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token')
@@ -141,7 +151,10 @@ export default function ChatPage() {
       
       if (response.ok) {
         const data = await response.json()
-        setConversations(data.data || [])
+        const conversationsList = data.data || []
+        // Sort conversations by last activity (newest first)
+        const sortedConversations = sortConversationsByActivity(conversationsList)
+        setConversations(sortedConversations)
       }
     } catch (error) {
       console.error('Error fetching conversations:', error)
@@ -254,14 +267,15 @@ export default function ChatPage() {
     const existingConversation = conversations.find(conv => conv._id === message.conversationId);
     
     if (existingConversation) {
-      // Update existing conversation
-      setConversations(prev => 
-        prev.map(conv => 
+      // Update existing conversation and sort by activity
+      setConversations(prev => {
+        const updatedConversations = prev.map(conv => 
           conv._id === message.conversationId
             ? { ...conv, lastMessage: message, lastActivity: new Date() }
             : conv
         )
-      )
+        return sortConversationsByActivity(updatedConversations)
+      })
     } else {
       // This is a new conversation, we need to fetch it and add it to the list
       fetchAndAddNewConversation(message.conversationId);
@@ -281,8 +295,26 @@ export default function ChatPage() {
         const data = await response.json()
         const newConversation = data.data
         
-        // Add the new conversation to the list
-        setConversations(prev => [newConversation, ...prev])
+        // Also fetch the last message to display in sidebar
+        const messagesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversationId}/messages?limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+        
+        if (messagesResponse.ok) {
+          const messagesData = await messagesResponse.json()
+          if (messagesData.data && messagesData.data.length > 0) {
+            // Update conversation with the last message
+            newConversation.lastMessage = messagesData.data[0]
+            newConversation.lastActivity = new Date(messagesData.data[0].createdAt)
+          }
+        }
+        
+        console.log('✅ Fetched new conversation with messages:', newConversation)
+        
+        // Add the new conversation to the list and sort by activity
+        setConversations(prev => sortConversationsByActivity([newConversation, ...prev]))
         
         // If no conversation is currently selected, select this new one
         if (!selectedConversation) {
