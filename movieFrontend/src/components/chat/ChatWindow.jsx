@@ -23,7 +23,8 @@ export default function ChatWindow({ conversation, currentUser, onMessageSent, o
     sendMessage,
     handleTyping,
     handleInputFocus,
-    handleInputBlur
+    handleInputBlur,
+    markConversationAsRead
   } = useChat(conversation, currentUser, onMessageSent, onMarkAsRead)
 
   if (isLoading) {

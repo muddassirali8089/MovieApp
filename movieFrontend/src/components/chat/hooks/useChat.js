@@ -16,10 +16,12 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
 
   const otherParticipant = conversation?.participants?.find(p => p._id !== currentUser?._id)
 
+  // Mark conversation as read immediately when it opens
   useEffect(() => {
     if (conversation?._id) {
       fetchMessages()
-      onMarkAsRead()
+      // Mark as read immediately when conversation opens
+      markConversationAsRead()
       joinConversation(conversation._id)
     }
 
@@ -34,11 +36,18 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
     scrollToBottom()
   }, [messages])
 
+  // Mark conversation as read when messages are loaded
+  useEffect(() => {
+    if (conversation?._id && messages.length > 0) {
+      markConversationAsRead()
+    }
+  }, [conversation?._id, messages.length])
+
   useEffect(() => {
     const handleNewMessage = (event) => {
       const { conversationId, message } = event.detail
       
-      if (conversationId === conversation?._id || message.conversationId === conversation?._id) {
+      if (conversationId === conversation?._id || message.conversationId === conversation._id) {
         setMessages(prev => {
           const messageExists = prev.some(msg => msg._id === message._id)
           if (messageExists) return prev
@@ -47,6 +56,11 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
         
         // Call onMessageSent to update conversation order in sidebar
         onMessageSent(message)
+        
+        // If this is a new message from someone else, mark it as read immediately
+        if (message.senderId !== currentUser?._id) {
+          markMessageAsRead(message._id)
+        }
       }
     }
 
@@ -101,6 +115,70 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
       toast.error('Failed to load messages')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Mark conversation as read - this is the key function
+  const markConversationAsRead = async () => {
+    if (!conversation?._id) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      
+      console.log('🔄 Marking conversation as read:', conversation._id)
+      
+      // Call the backend to mark conversation as read
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversation._id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        // Call onMarkAsRead to update the parent component (this removes the unread dot)
+        onMarkAsRead()
+        
+        // Update local messages to mark them as read
+        setMessages(prev => 
+          prev.map(msg => ({
+            ...msg,
+            isRead: true
+          }))
+        )
+        
+        console.log('✅ Conversation marked as read:', conversation._id)
+      } else {
+        console.error('❌ Failed to mark conversation as read:', response.status)
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ Error marking conversation as read:', error)
+    }
+  }
+
+  // Mark individual message as read
+  const markMessageAsRead = async (messageId) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/messages/${messageId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        // Update local message state
+        setMessages(prev => 
+          prev.map(msg => 
+            msg._id === messageId ? { ...msg, isRead: true } : msg
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error)
     }
   }
 
@@ -195,6 +273,8 @@ export const useChat = (conversation, currentUser, onMessageSent, onMarkAsRead) 
     handleTyping,
     handleInputFocus,
     handleInputBlur,
-    scrollToBottom
+    scrollToBottom,
+    markConversationAsRead,
+    markMessageAsRead
   }
 }

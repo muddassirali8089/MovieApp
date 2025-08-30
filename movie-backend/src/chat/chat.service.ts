@@ -155,17 +155,46 @@ export class ChatService {
   }
 
   async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
-    await this.messageModel.updateMany(
-      {
-        conversationId,
-        senderId: { $ne: userId },
-        isRead: false,
-      },
-      {
-        isRead: true,
-        readAt: new Date(),
-      },
-    );
+    console.log(`🔍 Marking conversation ${conversationId} as read for user ${userId}`);
+    
+    // First, find all unread messages in this conversation from other users
+    const unreadMessages = await this.messageModel.find({
+      conversationId,
+      senderId: { $ne: userId },
+      isRead: false,
+    });
+    
+    console.log(`📝 Found ${unreadMessages.length} unread messages to mark as read`);
+    
+    if (unreadMessages.length > 0) {
+      // Update all unread messages
+      const result = await this.messageModel.updateMany(
+        {
+          conversationId,
+          senderId: { $ne: userId },
+          isRead: false,
+        },
+        {
+          $set: {
+            isRead: true,
+            readAt: new Date(),
+          },
+        },
+      );
+      
+      console.log(`✅ Updated ${result.modifiedCount} messages as read`);
+      
+      // Emit events for each message that was marked as read
+      for (const message of unreadMessages) {
+        this.chatEvents.emitMessageRead(
+          conversationId,
+          message._id.toString(),
+          userId,
+        );
+      }
+    } else {
+      console.log(`ℹ️ No unread messages found in conversation ${conversationId}`);
+    }
   }
 
   async getUnreadCount(userId: string): Promise<number> {

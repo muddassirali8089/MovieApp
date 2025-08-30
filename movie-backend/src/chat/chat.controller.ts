@@ -120,6 +120,16 @@ export class ChatController {
     };
   }
 
+  @Post('conversations/:id/read-test')
+  async markConversationAsReadTest(@Request() req, @Param('id') conversationId: string) {
+    console.log(`🧪 Test endpoint called for conversation ${conversationId} by user ${req.user._id}`);
+    await this.chatService.markConversationAsRead(conversationId, req.user._id);
+    return {
+      success: true,
+      message: 'Test: All messages in conversation marked as read',
+    };
+  }
+
   @Get('unread-count')
   async getUnreadCount(@Request() req) {
     const count = await this.chatService.getUnreadCount(req.user._id);

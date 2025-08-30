@@ -11,6 +11,3 @@ export * from './hooks'
 
 // Utility functions
 export * from './utils/chatUtils'
-
-// Demo component for testing conversation ordering
-export { default as ConversationOrderDemo } from './components/ConversationOrderDemo'

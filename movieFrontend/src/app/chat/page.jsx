@@ -144,17 +144,35 @@ export default function ChatPage() {
   const markConversationAsRead = async (conversationId) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversationId}/read`, {
+      console.log('🔄 Marking conversation as read from chat page:', conversationId)
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000/api/v1'}/chat/conversations/${conversationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
       
-      // Update unread count
-      fetchUnreadCount()
+      if (response.ok) {
+        console.log('✅ Conversation marked as read from chat page')
+        // Update unread count
+        fetchUnreadCount()
+        
+        // Update conversations list to reflect read status
+        setConversations(prev => 
+          prev.map(conv => 
+            conv._id === conversationId
+              ? { ...conv, lastMessage: { ...conv.lastMessage, isRead: true } }
+              : conv
+          )
+        )
+      } else {
+        console.error('❌ Failed to mark conversation as read from chat page:', response.status)
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+      }
     } catch (error) {
-      console.error('Error marking conversation as read:', error)
+      console.error('❌ Error marking conversation as read from chat page:', error)
     }
   }
 

@@ -48,10 +48,37 @@ export const formatMessageTime = (date) => {
 }
 
 export const hasUnreadMessages = (conversation, currentUserId) => {
-  return conversation.lastMessage && 
-         conversation.lastMessage.senderId && 
-         conversation.lastMessage.senderId !== currentUserId &&
-         conversation.lastMessage.isRead === false
+  // First check if the conversation itself is marked as read
+  if (conversation.isRead === true) {
+    return false // Conversation is marked as read, no unread dot
+  }
+  
+  // Check if there's a last message
+  if (!conversation.lastMessage) {
+    return false
+  }
+  
+  // Check if the last message has a sender
+  if (!conversation.lastMessage.senderId) {
+    return false
+  }
+  
+  // Check if the last message is from the current user (not unread for them)
+  const lastMessageSenderId = typeof conversation.lastMessage.senderId === 'string' 
+    ? conversation.lastMessage.senderId 
+    : conversation.lastMessage.senderId._id
+  
+  if (lastMessageSenderId === currentUserId) {
+    return false // Current user sent the last message, so no unread
+  }
+  
+  // Check if the message is marked as read
+  if (conversation.lastMessage.isRead === true) {
+    return false // Message is marked as read
+  }
+  
+  // If we reach here, the message is unread
+  return true
 }
 
 export const sortConversationsByActivity = (conversations) => {
